@@ -7,7 +7,8 @@ const scopes = [
   "user-read-private",
   "user-read-playback-state",
   "user-modify-playback-state",
-  "user-read-currently-playing"
+  "user-read-currently-playing",
+  "user-read-recently-played"
 ];
 
 export async function GET() {

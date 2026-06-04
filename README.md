@@ -91,6 +91,27 @@ Suggested integrations:
 
 Heavy analysis should run outside Vercel on Modal, Replicate, Hugging Face Spaces, RunPod, or a local Python service.
 
+## Sprint 1: Music Revival Index
+
+The first analytics sprint adds a revival scoring module and API endpoint:
+
+```http
+POST /api/analytics/revival
+```
+
+Use this endpoint with imported listening history to detect tracks or artists that disappeared from rotation and later returned. The current `GET /api/analytics/revival` route can read Spotify recently played data for wiring checks, but real multi-year revival analysis needs stored history from Spotify Extended Streaming History or a future ingestion worker.
+
+You can also export the authenticated user's recent-play API window as normalized JSON:
+
+```http
+GET /api/analytics/spotify-history
+```
+
+Database starter files:
+
+- `db/001_music_revival.sql`: Postgres tables and Power BI-ready materialized views.
+- `docs/sprint-1-music-revival.md`: scoring notes, endpoint contract, and next backend step.
+
 Example contract:
 
 ```http

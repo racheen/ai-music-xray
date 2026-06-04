@@ -1,4 +1,5 @@
-import { Music2, PlayCircle } from "lucide-react";
+import { Database, Music2 } from "lucide-react";
+import { SpotifyAuthAction } from "@/components/spotify/SpotifyAuthAction";
 
 export default function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
   return (
@@ -22,12 +23,17 @@ async function LoginContent({ searchParams }: { searchParams: Promise<{ error?: 
           </div>
         ) : null}
         <div className="mt-6 grid gap-3">
-          <a href="/api/spotify/login" className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-cyan-300 px-4 text-sm font-semibold text-slate-950 hover:bg-cyan-200">
-            <PlayCircle size={18} />
-            Continue with Spotify
-          </a>
+          <SpotifyAuthAction
+            connectedLabel="Disconnect Spotify"
+            disconnectedLabel="Continue with Spotify"
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-cyan-300 px-4 text-sm font-semibold text-slate-950 hover:bg-cyan-200"
+          />
           <a href="/app" className="inline-flex h-11 items-center justify-center rounded-md border border-white/10 bg-white/6 px-4 text-sm text-white hover:bg-white/10">
             Open demo mode
+          </a>
+          <a href="/spotify-history" className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-white/10 bg-white/6 px-4 text-sm text-white hover:bg-white/10">
+            <Database size={16} />
+            View history JSON
           </a>
         </div>
       </div>

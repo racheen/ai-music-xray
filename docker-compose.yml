@@ -1,0 +1,22 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: ai-music-xray-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ai_music_xray
+      POSTGRES_USER: ai_music_xray
+      POSTGRES_PASSWORD: ai_music_xray_dev
+    ports:
+      - "55432:5432"
+    volumes:
+      - ai_music_xray_postgres_data:/var/lib/postgresql/data
+      - ./db/001_music_revival.sql:/docker-entrypoint-initdb.d/001_music_revival.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ai_music_xray -d ai_music_xray"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  ai_music_xray_postgres_data:

@@ -1,4 +1,5 @@
-import { Activity, AudioLines, BrainCircuit, Sparkles } from "lucide-react";
+import { Activity, AudioLines, BrainCircuit, Database, Sparkles } from "lucide-react";
+import { SpotifyAuthAction } from "@/components/spotify/SpotifyAuthAction";
 
 const features = [
   { label: "Beat-reactive scenes", Icon: Activity },
@@ -25,8 +26,14 @@ export default function HomePage() {
               <a href="/app" className="inline-flex h-10 items-center justify-center rounded-md bg-cyan-300 px-4 text-sm font-medium text-slate-950 hover:bg-cyan-200">
                 Launch visualizer
               </a>
-              <a href="/login" className="inline-flex h-10 items-center justify-center rounded-md border border-white/12 bg-white/6 px-4 text-sm font-medium text-white hover:bg-white/10">
-                Connect Spotify
+              <SpotifyAuthAction
+                connectedLabel="Disconnect Spotify"
+                disconnectedLabel="Connect Spotify"
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-white/12 bg-white/6 px-4 text-sm font-medium text-white hover:bg-white/10"
+              />
+              <a href="/spotify-history" className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-white/12 bg-white/6 px-4 text-sm font-medium text-white hover:bg-white/10">
+                <Database size={16} />
+                View history JSON
               </a>
             </div>
           </div>

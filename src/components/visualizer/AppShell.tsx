@@ -7,6 +7,7 @@ import type { LayerId, Mood, TrackAnalysis, TrackSnapshot } from "@/types/music"
 import { demoTrack } from "@/components/spotify/demoTrack";
 import { TrackPanel } from "@/components/spotify/TrackPanel";
 import { useSpotifyPlayer } from "@/components/spotify/useSpotifyPlayer";
+import { Database, LogIn, LogOut } from "lucide-react";
 import { MusicVisualizer } from "./MusicVisualizer";
 
 const initialLayers: Record<LayerId, boolean> = {
@@ -34,10 +35,11 @@ export function AppShell() {
 
     async function checkSpotifySession() {
       try {
-        const response = await fetch("/api/spotify/token", { cache: "no-store" });
+        const response = await fetch("/api/spotify/session", { cache: "no-store" });
+        const session = (await response.json()) as { authenticated: boolean };
         if (cancelled) return;
-        setSpotifyAuthenticated(response.ok);
-        if (response.ok) setIsDemo(false);
+        setSpotifyAuthenticated(session.authenticated);
+        if (session.authenticated) setIsDemo(false);
       } catch {
         if (!cancelled) setSpotifyAuthenticated(false);
       } finally {
@@ -146,9 +148,23 @@ export function AppShell() {
       <div className="relative z-10 flex min-h-dvh flex-col justify-between gap-8 p-4 md:p-8">
         <nav className="flex items-center justify-between">
           <Link href="/" className="text-sm font-semibold tracking-[0.24em] text-cyan-100">AI MUSIC X-RAY</Link>
-          <div className="flex gap-3 text-sm text-slate-300">
+          <div className="flex items-center gap-3 text-sm text-slate-300">
             <Link href="/settings" className="hover:text-white">Settings</Link>
-            <Link href="/login" className="hover:text-white">Login</Link>
+            <Link href="/spotify-history" className="inline-flex items-center gap-1 hover:text-white">
+              <Database size={15} />
+              History
+            </Link>
+            {authChecked && spotifyAuthenticated ? (
+              <a href="/api/spotify/logout" className="inline-flex items-center gap-1 hover:text-white">
+                <LogOut size={15} />
+                Logout
+              </a>
+            ) : (
+              <a href="/api/spotify/login" className="inline-flex items-center gap-1 hover:text-white">
+                <LogIn size={15} />
+                Login
+              </a>
+            )}
           </div>
         </nav>
         <div className="flex flex-1 items-end">
