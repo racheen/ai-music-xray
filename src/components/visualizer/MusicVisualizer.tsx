@@ -1,7 +1,7 @@
 "use client";
 
-import { Canvas, useFrame } from "@react-three/fiber";
-import { useMemo, useRef } from "react";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { stemFrameAt } from "@/lib/analysis/fallback";
 import type { LayerId, Mood, TrackAnalysis } from "@/types/music";
@@ -19,16 +19,34 @@ export function MusicVisualizer(props: VisualizerProps) {
   const palette = moodPalettes[props.mood];
 
   return (
-    <div className="absolute inset-0">
-      <Canvas camera={{ position: [0, 0, 8], fov: 58 }} gl={{ antialias: true, alpha: false }}>
+    <div className="fixed inset-0 h-dvh w-dvw max-w-[100dvw] overflow-hidden bg-slate-950">
+      <Canvas className="h-full w-full" camera={{ position: [0, 0, 8], fov: 58 }} gl={{ antialias: true, alpha: false }}>
         <color attach="background" args={[palette.bg]} />
         <fog attach="fog" args={[palette.bg, 8, 22]} />
         <ambientLight intensity={0.35} />
         <pointLight position={[3, 4, 5]} intensity={2.2} color={palette.vocals} />
         <pointLight position={[-5, -3, 3]} intensity={1.4} color={palette.drums} />
-        <Scene {...props} />
+        <ResponsiveScene {...props} />
       </Canvas>
     </div>
+  );
+}
+
+function ResponsiveScene(props: VisualizerProps) {
+  const { camera, size } = useThree();
+  const isNarrow = size.width < 520;
+  const isPortrait = size.height > size.width;
+  const sceneScale = isNarrow ? 0.56 : isPortrait ? 0.72 : 1;
+
+  useEffect(() => {
+    camera.position.z = isNarrow ? 10.5 : isPortrait ? 9.4 : 8;
+    camera.updateProjectionMatrix();
+  }, [camera, isNarrow, isPortrait]);
+
+  return (
+    <group scale={sceneScale} position={[0, isNarrow ? 0.25 : 0, 0]}>
+      <Scene {...props} />
+    </group>
   );
 }
 

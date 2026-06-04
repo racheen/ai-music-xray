@@ -175,7 +175,7 @@ export function AppShell() {
   const hideControls = useCallback(() => setControlsVisible(false), []);
 
   return (
-    <main className="relative min-h-dvh overflow-hidden bg-slate-950 text-white">
+    <main className="relative h-dvh w-dvw max-w-[100dvw] overflow-hidden bg-slate-950 text-white">
       <MusicVisualizer
         analysis={analysis}
         progressMs={progress}
@@ -184,14 +184,14 @@ export function AppShell() {
         layers={layers}
       />
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_35%,transparent_0,rgba(2,6,23,.2)_32%,rgba(2,6,23,.78)_100%)]" />
-      <div className="relative z-10 flex min-h-dvh flex-col justify-between gap-8 p-4 md:p-8">
-        <nav className="flex items-center justify-between">
-          <Link href="/" className="text-sm font-semibold tracking-[0.24em] text-cyan-100">AI MUSIC X-RAY</Link>
-          <div className="flex items-center gap-3 text-sm text-slate-300">
+      <div className="relative z-10 flex h-dvh w-full max-w-full flex-col justify-between gap-8 overflow-hidden px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-[calc(1rem+env(safe-area-inset-top))] md:p-8">
+        <nav className="flex min-w-0 items-center justify-between gap-3">
+          <Link href="/" className="min-w-0 truncate text-sm font-semibold tracking-[0.18em] text-cyan-100 sm:tracking-[0.24em]">AI MUSIC X-RAY</Link>
+          <div className="flex shrink-0 items-center gap-2 text-sm text-slate-300 sm:gap-3">
             <Link href="/settings" className="hover:text-white">Settings</Link>
             <Link href="/spotify-history" className="inline-flex items-center gap-1 hover:text-white">
               <Database size={15} />
-              History
+              <span className="hidden min-[390px]:inline">History</span>
             </Link>
             {authChecked && spotifyAuthenticated ? (
               <a href="/api/spotify/logout" className="inline-flex items-center gap-1 hover:text-white">
@@ -206,7 +206,7 @@ export function AppShell() {
             )}
           </div>
         </nav>
-        <div className="flex flex-1 items-end">
+        <div className="flex min-w-0 flex-1 items-end">
           {controlsVisible ? (
             <TrackPanel
               track={activeTrack}
