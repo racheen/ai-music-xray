@@ -215,6 +215,8 @@ export function AppShell() {
               authChecked={authChecked}
               premiumRequired={status.premiumRequired}
               playerReady={status.ready}
+              playerError={status.error}
+              playerMessage={status.message}
               mood={mood}
               layers={layers}
               progress={progress}

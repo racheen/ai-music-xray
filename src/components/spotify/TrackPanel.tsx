@@ -12,6 +12,8 @@ type Props = {
   authChecked: boolean;
   premiumRequired?: boolean;
   playerReady?: boolean;
+  playerError?: string;
+  playerMessage?: string;
   mood: Mood;
   layers: Record<LayerId, boolean>;
   progress: number;
@@ -41,6 +43,8 @@ export function TrackPanel({
   authChecked,
   premiumRequired,
   playerReady,
+  playerError,
+  playerMessage,
   mood,
   layers,
   progress,
@@ -60,6 +64,8 @@ export function TrackPanel({
   const emptySubtitle = spotifyAuthenticated
     ? "Open Spotify and select AI Music X-Ray as the device"
     : "Connect Spotify or use demo mode";
+  const controlsEnabled = Boolean(track || (!isDemo && spotifyAuthenticated));
+  const feedback = playerError ?? playerMessage;
 
   return (
     <aside className="z-10 flex w-full max-w-xl flex-col gap-4 rounded-lg border border-white/10 bg-slate-950/72 p-4 shadow-2xl shadow-cyan-950/40 backdrop-blur md:w-[390px]">
@@ -106,16 +112,28 @@ export function TrackPanel({
         </div>
       ) : null}
 
+      {feedback ? (
+        <div
+          className={`rounded-md border p-3 text-sm ${
+            playerError
+              ? "border-rose-300/25 bg-rose-400/10 text-rose-100"
+              : "border-cyan-300/20 bg-cyan-300/10 text-cyan-50"
+          }`}
+        >
+          {feedback}
+        </div>
+      ) : null}
+
       <div className="grid gap-3">
         <div className="flex items-center gap-2">
-          <Button variant="ghost" onClick={onPreviousTrack} disabled={!track} className="w-10 px-0" aria-label="Previous track">
+          <Button variant="ghost" onClick={onPreviousTrack} disabled={!controlsEnabled} className="w-10 px-0" aria-label="Previous track">
             <SkipBack size={16} />
           </Button>
-          <Button onClick={onTogglePlay} disabled={!track} className="flex-1">
+          <Button onClick={onTogglePlay} disabled={!controlsEnabled} className="flex-1">
             {track?.isPlaying ? <Pause size={16} /> : <Play size={16} />}
             {track?.isPlaying ? "Pause" : "Play"}
           </Button>
-          <Button variant="ghost" onClick={onNextTrack} disabled={!track} className="w-10 px-0" aria-label="Next track">
+          <Button variant="ghost" onClick={onNextTrack} disabled={!controlsEnabled} className="w-10 px-0" aria-label="Next track">
             <SkipForward size={16} />
           </Button>
         </div>
