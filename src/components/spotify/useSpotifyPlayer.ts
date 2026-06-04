@@ -88,5 +88,23 @@ export function useSpotifyPlayer(enabled: boolean) {
     await syncState();
   }, [syncState]);
 
-  return { status, track, togglePlay, syncState };
+  const nextTrack = useCallback(async () => {
+    await playerRef.current?.nextTrack();
+    await syncState();
+  }, [syncState]);
+
+  const previousTrack = useCallback(async () => {
+    await playerRef.current?.previousTrack();
+    await syncState();
+  }, [syncState]);
+
+  const seek = useCallback(
+    async (positionMs: number) => {
+      await playerRef.current?.seek(positionMs);
+      await syncState();
+    },
+    [syncState]
+  );
+
+  return { status, track, togglePlay, nextTrack, previousTrack, seek, syncState };
 }

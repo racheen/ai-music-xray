@@ -20,6 +20,9 @@ declare global {
     togglePlay: () => Promise<void>;
     pause: () => Promise<void>;
     resume: () => Promise<void>;
+    nextTrack: () => Promise<void>;
+    previousTrack: () => Promise<void>;
+    seek: (positionMs: number) => Promise<void>;
   };
 
   type SpotifyWebPlaybackState = {

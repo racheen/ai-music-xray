@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { Layers, LogIn, Pause, Play, Radio, Sparkles } from "lucide-react";
+import { Layers, LogIn, Pause, Play, Radio, SkipBack, SkipForward, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import type { LayerId, Mood, TrackSnapshot } from "@/types/music";
 
@@ -18,6 +18,9 @@ type Props = {
   onUseDemo: () => void;
   onUseSpotify: () => void;
   onTogglePlay: () => void;
+  onNextTrack: () => void;
+  onPreviousTrack: () => void;
+  onSeek: (positionMs: number) => void;
   onMood: (mood: Mood) => void;
   onLayer: (layer: LayerId) => void;
 };
@@ -43,6 +46,9 @@ export function TrackPanel({
   onUseDemo,
   onUseSpotify,
   onTogglePlay,
+  onNextTrack,
+  onPreviousTrack,
+  onSeek,
   onMood,
   onLayer
 }: Props) {
@@ -85,11 +91,40 @@ export function TrackPanel({
         </div>
       ) : null}
 
-      <div className="grid grid-cols-2 gap-2">
-        <Button onClick={onTogglePlay} disabled={!track}>
-          {track?.isPlaying ? <Pause size={16} /> : <Play size={16} />}
-          {track?.isPlaying ? "Pause" : "Play"}
-        </Button>
+      <div className="grid gap-3">
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" onClick={onPreviousTrack} disabled={!track} className="w-10 px-0" aria-label="Previous track">
+            <SkipBack size={16} />
+          </Button>
+          <Button onClick={onTogglePlay} disabled={!track} className="flex-1">
+            {track?.isPlaying ? <Pause size={16} /> : <Play size={16} />}
+            {track?.isPlaying ? "Pause" : "Play"}
+          </Button>
+          <Button variant="ghost" onClick={onNextTrack} disabled={!track} className="w-10 px-0" aria-label="Next track">
+            <SkipForward size={16} />
+          </Button>
+        </div>
+
+        <div className="grid gap-1">
+          <input
+            type="range"
+            min={0}
+            max={track?.durationMs ?? 1}
+            step={1000}
+            value={Math.min(progress, track?.durationMs ?? 0)}
+            disabled={!track}
+            onChange={(event) => onSeek(Number(event.currentTarget.value))}
+            aria-label="Playback position"
+            className="h-2 w-full accent-cyan-300 disabled:opacity-45"
+          />
+          <div className="flex justify-between font-mono text-xs text-slate-400">
+            <span>{formatTime(progress)}</span>
+            <span>{formatTime(track?.durationMs ?? 0)}</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-2">
         {isDemo ? (
           spotifyAuthenticated ? (
             <Button variant="ghost" onClick={onUseSpotify}>
@@ -154,4 +189,12 @@ export function TrackPanel({
       ) : null}
     </aside>
   );
+}
+
+function formatTime(milliseconds: number) {
+  const safeMilliseconds = Math.max(0, milliseconds);
+  const totalSeconds = Math.floor(safeMilliseconds / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 }

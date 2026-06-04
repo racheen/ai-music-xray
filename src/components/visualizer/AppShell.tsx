@@ -28,7 +28,14 @@ export function AppShell() {
   const [analysis, setAnalysis] = useState<TrackAnalysis>(() =>
     createFallbackAnalysis({ trackId: demoTrack.id, durationMs: demoTrack.durationMs, tempo: demoTrack.tempo })
   );
-  const { status, track: spotifyTrack, togglePlay: toggleSpotifyPlay } = useSpotifyPlayer(!isDemo);
+  const {
+    status,
+    track: spotifyTrack,
+    togglePlay: toggleSpotifyPlay,
+    nextTrack: nextSpotifyTrack,
+    previousTrack: previousSpotifyTrack,
+    seek: seekSpotifyTrack
+  } = useSpotifyPlayer(!isDemo);
 
   useEffect(() => {
     let cancelled = false;
@@ -102,6 +109,35 @@ export function AppShell() {
     }
     void toggleSpotifyPlay();
   }, [isDemo, toggleSpotifyPlay]);
+
+  const nextTrack = useCallback(() => {
+    if (isDemo) {
+      setDemoProgress(0);
+      setDemoPlaying(true);
+      return;
+    }
+    void nextSpotifyTrack();
+  }, [isDemo, nextSpotifyTrack]);
+
+  const previousTrack = useCallback(() => {
+    if (isDemo) {
+      setDemoProgress(0);
+      return;
+    }
+    void previousSpotifyTrack();
+  }, [isDemo, previousSpotifyTrack]);
+
+  const seekTrack = useCallback(
+    (positionMs: number) => {
+      const safePosition = Math.max(0, Math.min(positionMs, activeTrack?.durationMs ?? demoTrack.durationMs));
+      if (isDemo) {
+        setDemoProgress(safePosition);
+        return;
+      }
+      void seekSpotifyTrack(safePosition);
+    },
+    [activeTrack?.durationMs, isDemo, seekSpotifyTrack]
+  );
 
   const cycleMood = useCallback(() => {
     const moods: Mood[] = ["chill", "hype", "dark", "dreamy"];
@@ -181,6 +217,9 @@ export function AppShell() {
             onUseDemo={useDemoMode}
             onUseSpotify={useSpotifyMode}
             onTogglePlay={togglePlay}
+            onNextTrack={nextTrack}
+            onPreviousTrack={previousTrack}
+            onSeek={seekTrack}
             onMood={setMood}
             onLayer={toggleLayer}
           />

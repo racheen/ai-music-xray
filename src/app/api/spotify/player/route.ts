@@ -20,11 +20,33 @@ export async function GET() {
 }
 
 export async function PUT(request: Request) {
-  const body = (await request.json().catch(() => ({}))) as { action?: "play" | "pause" | "toggle" };
-  const action = body.action === "pause" ? "pause" : "play";
-  const { response, session } = await spotifyFetch(`/me/player/${action}`, { method: "PUT" });
+  const body = (await request.json().catch(() => ({}))) as {
+    action?: "play" | "pause" | "toggle" | "next" | "previous" | "seek";
+    positionMs?: number;
+  };
+
+  const requestOptions = getPlayerRequest(body);
+  if (!requestOptions) {
+    return NextResponse.json({ error: "Unsupported Spotify player action." }, { status: 400 });
+  }
+
+  const { response, session } = await spotifyFetch(requestOptions.path, { method: requestOptions.method });
   if (!response || !session) return NextResponse.json({ authenticated: false }, { status: 401 });
   const json = NextResponse.json({ ok: response.ok, status: response.status });
   writeSession(json, session);
   return json;
+}
+
+function getPlayerRequest(body: { action?: string; positionMs?: number }) {
+  if (body.action === "pause") return { path: "/me/player/pause", method: "PUT" };
+  if (body.action === "next") return { path: "/me/player/next", method: "POST" };
+  if (body.action === "previous") return { path: "/me/player/previous", method: "POST" };
+  if (body.action === "seek") {
+    const positionMs = Math.max(0, Math.round(body.positionMs ?? 0));
+    return { path: `/me/player/seek?position_ms=${positionMs}`, method: "PUT" };
+  }
+  if (body.action === "play" || body.action === "toggle" || !body.action) {
+    return { path: "/me/player/play", method: "PUT" };
+  }
+  return null;
 }
