@@ -138,12 +138,15 @@ function VocalRibbon({ time, intensity, color }: { time: number; intensity: numb
 
 function ParticleField({ time, intensity, color, isPlaying }: { time: number; intensity: number; color: string; isPlaying: boolean }) {
   const pointsRef = useRef<THREE.Points>(null);
+  const { size } = useThree();
+  const isPortrait = size.height > size.width;
   const geometry = useMemo(() => {
-    const positions = new Float32Array(900);
-    for (let i = 0; i < 300; i += 1) {
-      positions[i * 3] = (Math.random() - 0.5) * 12;
-      positions[i * 3 + 1] = (Math.random() - 0.5) * 7;
-      positions[i * 3 + 2] = (Math.random() - 0.5) * 8;
+    const particleCount = 460;
+    const positions = new Float32Array(particleCount * 3);
+    for (let i = 0; i < particleCount; i += 1) {
+      positions[i * 3] = (Math.random() - 0.5) * 18;
+      positions[i * 3 + 1] = (Math.random() - 0.5) * 9;
+      positions[i * 3 + 2] = (Math.random() - 0.5) * 10;
     }
     const field = new THREE.BufferGeometry();
     field.setAttribute("position", new THREE.BufferAttribute(positions, 3));
@@ -157,7 +160,7 @@ function ParticleField({ time, intensity, color, isPlaying }: { time: number; in
   });
 
   return (
-    <points ref={pointsRef} geometry={geometry}>
+    <points ref={pointsRef} geometry={geometry} scale={[isPortrait ? 1.35 : 1, isPortrait ? 1.08 : 1, 1]}>
       <pointsMaterial color={color} size={0.028 + intensity * 0.045} transparent opacity={0.62} depthWrite={false} />
     </points>
   );
