@@ -7,7 +7,7 @@ import type { LayerId, Mood, TrackAnalysis, TrackSnapshot } from "@/types/music"
 import { demoTrack } from "@/components/spotify/demoTrack";
 import { TrackPanel } from "@/components/spotify/TrackPanel";
 import { useSpotifyPlayer } from "@/components/spotify/useSpotifyPlayer";
-import { Database, LogIn, LogOut } from "lucide-react";
+import { Database, LogIn, LogOut, SlidersHorizontal } from "lucide-react";
 import { MusicVisualizer } from "./MusicVisualizer";
 
 const initialLayers: Record<LayerId, boolean> = {
@@ -23,6 +23,7 @@ export function AppShell() {
   const [authChecked, setAuthChecked] = useState(false);
   const [demoPlaying, setDemoPlaying] = useState(true);
   const [demoProgress, setDemoProgress] = useState(0);
+  const [controlsVisible, setControlsVisible] = useState(true);
   const [mood, setMood] = useState<Mood>("hype");
   const [layers, setLayers] = useState(initialLayers);
   const [analysis, setAnalysis] = useState<TrackAnalysis>(() =>
@@ -170,6 +171,8 @@ export function AppShell() {
   const progress = activeTrack?.progressMs ?? 0;
   const useDemoMode = useCallback(() => setIsDemo(true), []);
   const useSpotifyMode = useCallback(() => setIsDemo(false), []);
+  const showControls = useCallback(() => setControlsVisible(true), []);
+  const hideControls = useCallback(() => setControlsVisible(false), []);
 
   return (
     <main className="relative min-h-dvh overflow-hidden bg-slate-950 text-white">
@@ -204,25 +207,38 @@ export function AppShell() {
           </div>
         </nav>
         <div className="flex flex-1 items-end">
-          <TrackPanel
-            track={activeTrack}
-            isDemo={isDemo}
-            spotifyAuthenticated={spotifyAuthenticated}
-            authChecked={authChecked}
-            premiumRequired={status.premiumRequired}
-            playerReady={status.ready}
-            mood={mood}
-            layers={layers}
-            progress={progress}
-            onUseDemo={useDemoMode}
-            onUseSpotify={useSpotifyMode}
-            onTogglePlay={togglePlay}
-            onNextTrack={nextTrack}
-            onPreviousTrack={previousTrack}
-            onSeek={seekTrack}
-            onMood={setMood}
-            onLayer={toggleLayer}
-          />
+          {controlsVisible ? (
+            <TrackPanel
+              track={activeTrack}
+              isDemo={isDemo}
+              spotifyAuthenticated={spotifyAuthenticated}
+              authChecked={authChecked}
+              premiumRequired={status.premiumRequired}
+              playerReady={status.ready}
+              mood={mood}
+              layers={layers}
+              progress={progress}
+              onUseDemo={useDemoMode}
+              onUseSpotify={useSpotifyMode}
+              onHideControls={hideControls}
+              onTogglePlay={togglePlay}
+              onNextTrack={nextTrack}
+              onPreviousTrack={previousTrack}
+              onSeek={seekTrack}
+              onMood={setMood}
+              onLayer={toggleLayer}
+            />
+          ) : (
+            <button
+              type="button"
+              onClick={showControls}
+              className="inline-flex h-11 items-center gap-2 rounded-full border border-white/10 bg-slate-950/72 px-4 text-sm font-medium text-white shadow-xl shadow-cyan-950/30 backdrop-blur transition hover:bg-slate-900/85"
+              aria-label="Show controls"
+            >
+              <SlidersHorizontal size={16} />
+              Controls
+            </button>
+          )}
         </div>
       </div>
     </main>

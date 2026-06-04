@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { Layers, LogIn, Pause, Play, Radio, SkipBack, SkipForward, Sparkles } from "lucide-react";
+import { EyeOff, Layers, LogIn, Pause, Play, Radio, SkipBack, SkipForward, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import type { LayerId, Mood, TrackSnapshot } from "@/types/music";
 
@@ -17,6 +17,7 @@ type Props = {
   progress: number;
   onUseDemo: () => void;
   onUseSpotify: () => void;
+  onHideControls: () => void;
   onTogglePlay: () => void;
   onNextTrack: () => void;
   onPreviousTrack: () => void;
@@ -45,6 +46,7 @@ export function TrackPanel({
   progress,
   onUseDemo,
   onUseSpotify,
+  onHideControls,
   onTogglePlay,
   onNextTrack,
   onPreviousTrack,
@@ -61,6 +63,19 @@ export function TrackPanel({
 
   return (
     <aside className="z-10 flex w-full max-w-xl flex-col gap-4 rounded-lg border border-white/10 bg-slate-950/72 p-4 shadow-2xl shadow-cyan-950/40 backdrop-blur md:w-[390px]">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Controls</p>
+        <button
+          type="button"
+          onClick={onHideControls}
+          className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-white/10 bg-white/6 text-slate-300 transition hover:bg-white/10 hover:text-white"
+          aria-label="Hide controls"
+          title="Hide controls"
+        >
+          <EyeOff size={15} />
+        </button>
+      </div>
+
       <div className="flex gap-4">
         <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-md bg-white/10">
           {track?.albumArt ? (
