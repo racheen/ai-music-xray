@@ -54,10 +54,10 @@ export default function SpotifyHistoryPage() {
   const rawJson = useMemo(() => JSON.stringify(data ?? {}, null, 2), [data]);
 
   return (
-    <main className="min-h-dvh bg-slate-950 px-5 py-8 text-white">
+    <main className="min-h-dvh bg-[#04110a] px-5 py-8 text-white">
       <div className="mx-auto flex max-w-6xl flex-col gap-6">
         <nav className="flex flex-wrap items-center justify-between gap-3">
-          <Link href="/" className="text-sm font-semibold tracking-[0.24em] text-cyan-100">
+          <Link href="/" className="text-sm font-semibold tracking-[0.24em] text-emerald-100">
             AI MUSIC X-RAY
           </Link>
           <div className="flex flex-wrap gap-2 text-sm">
@@ -73,7 +73,7 @@ export default function SpotifyHistoryPage() {
 
         <header className="flex flex-col gap-4 border-b border-white/10 pb-6 md:flex-row md:items-end md:justify-between">
           <div>
-            <p className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.22em] text-cyan-200">
+            <p className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.22em] text-emerald-200">
               <History size={16} />
               Recent Spotify JSON
             </p>
@@ -85,7 +85,7 @@ export default function SpotifyHistoryPage() {
           <button
             onClick={() => void loadHistory()}
             disabled={loading}
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-cyan-300 px-4 text-sm font-semibold text-slate-950 hover:bg-cyan-200 disabled:opacity-60"
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-emerald-300 px-4 text-sm font-semibold text-slate-950 hover:bg-emerald-200 disabled:opacity-60"
           >
             {loading ? <Loader2 className="animate-spin" size={16} /> : <RefreshCw size={16} />}
             Refresh
@@ -95,7 +95,7 @@ export default function SpotifyHistoryPage() {
         {loading ? (
           <section className="flex min-h-64 items-center justify-center rounded-lg border border-white/10 bg-white/[0.05]">
             <div className="flex items-center gap-3 text-slate-300">
-              <Loader2 className="animate-spin text-cyan-200" />
+              <Loader2 className="animate-spin text-emerald-200" />
               Loading Spotify history
             </div>
           </section>
@@ -124,14 +124,14 @@ export default function SpotifyHistoryPage() {
             </section>
 
             {data?.limitation ? (
-              <section className="rounded-lg border border-cyan-300/20 bg-cyan-300/10 p-4 text-sm text-cyan-50">
+              <section className="rounded-lg border border-emerald-300/20 bg-emerald-300/10 p-4 text-sm text-emerald-50">
                 {data.limitation}
               </section>
             ) : null}
 
             <section className="overflow-hidden rounded-lg border border-white/10 bg-white/[0.05]">
               <div className="flex items-center gap-2 border-b border-white/10 px-4 py-3">
-                <Database size={16} className="text-cyan-200" />
+                <Database size={16} className="text-emerald-200" />
                 <h2 className="font-semibold">Recent plays</h2>
               </div>
               <div className="overflow-x-auto">

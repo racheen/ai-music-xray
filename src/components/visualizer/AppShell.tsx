@@ -80,6 +80,7 @@ export function AppShell() {
   const analysisDurationMs = activeTrack?.durationMs;
   const analysisSource = activeTrack?.source;
   const analysisTempo = activeTrack?.tempo;
+  const analysisPreviewUrl = activeTrack?.previewUrl ?? null;
 
   useEffect(() => {
     if (!analysisTrackId || !analysisDurationMs || !analysisSource) return;
@@ -89,19 +90,35 @@ export function AppShell() {
         setAnalysis(createFallbackAnalysis({ trackId: analysisTrackId!, durationMs: analysisDurationMs, tempo: analysisTempo }));
         return;
       }
-      const response = await fetch(`/api/spotify/analysis/${analysisTrackId}?durationMs=${analysisDurationMs}`, { cache: "no-store" });
+      const response = await fetch("/api/analyze-track", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          trackId: analysisTrackId,
+          previewUrl: analysisPreviewUrl,
+          durationMs: analysisDurationMs
+        }),
+        cache: "no-store"
+      });
       if (!response.ok) {
         setAnalysis(createFallbackAnalysis({ trackId: analysisTrackId!, durationMs: analysisDurationMs }));
         return;
       }
-      const data = (await response.json()) as { analysis: TrackAnalysis };
-      if (!cancelled) setAnalysis(data.analysis);
+      const data = (await response.json()) as { beats: TrackAnalysis["beats"]; sections?: TrackAnalysis["sections"]; mood?: Mood; stems?: TrackAnalysis["stems"]; tempo?: number };
+      const nextAnalysis: TrackAnalysis = {
+        tempo: data.tempo,
+        beats: data.beats,
+        sections: data.sections,
+        mood: data.mood,
+        stems: data.stems
+      };
+      if (!cancelled) setAnalysis(nextAnalysis);
     }
     void loadAnalysis();
     return () => {
       cancelled = true;
     };
-  }, [analysisDurationMs, analysisSource, analysisTempo, analysisTrackId]);
+  }, [analysisDurationMs, analysisPreviewUrl, analysisSource, analysisTempo, analysisTrackId]);
 
   const togglePlay = useCallback(() => {
     if (isDemo) {
@@ -175,7 +192,7 @@ export function AppShell() {
   const hideControls = useCallback(() => setControlsVisible(false), []);
 
   return (
-    <main className="relative h-dvh w-dvw max-w-[100dvw] overflow-hidden bg-slate-950 text-white">
+    <main className="relative h-dvh w-dvw max-w-[100dvw] overflow-hidden bg-[#04110a] text-white">
       <MusicVisualizer
         analysis={analysis}
         progressMs={progress}
@@ -183,10 +200,10 @@ export function AppShell() {
         mood={mood}
         layers={layers}
       />
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_35%,transparent_0,rgba(2,6,23,.2)_32%,rgba(2,6,23,.78)_100%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_35%,transparent_0,rgba(4,17,10,.18)_32%,rgba(4,17,10,.82)_100%)]" />
       <div className="relative z-10 flex h-dvh w-full max-w-full flex-col justify-between gap-8 overflow-hidden px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-[calc(1rem+env(safe-area-inset-top))] md:p-8">
         <nav className="flex min-w-0 items-center justify-between gap-3">
-          <Link href="/" className="min-w-0 truncate text-sm font-semibold tracking-[0.18em] text-cyan-100 sm:tracking-[0.24em]">AI MUSIC X-RAY</Link>
+          <Link href="/" className="min-w-0 truncate text-sm font-semibold tracking-[0.18em] text-emerald-100 sm:tracking-[0.24em]">AI MUSIC X-RAY</Link>
           <div className="flex shrink-0 items-center gap-2 text-sm text-slate-300 sm:gap-3">
             <Link href="/settings" className="hover:text-white">Settings</Link>
             <Link href="/spotify-history" className="inline-flex items-center gap-1 hover:text-white">
@@ -234,7 +251,7 @@ export function AppShell() {
             <button
               type="button"
               onClick={showControls}
-              className="inline-flex h-11 items-center gap-2 rounded-full border border-white/10 bg-slate-950/72 px-4 text-sm font-medium text-white shadow-xl shadow-cyan-950/30 backdrop-blur transition hover:bg-slate-900/85"
+              className="inline-flex h-11 items-center gap-2 rounded-full border border-white/10 bg-[#07140d]/72 px-4 text-sm font-medium text-white shadow-xl shadow-emerald-950/30 backdrop-blur transition hover:bg-[#0b1a11]/85"
               aria-label="Show controls"
             >
               <SlidersHorizontal size={16} />

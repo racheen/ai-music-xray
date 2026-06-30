@@ -2,8 +2,10 @@
 
 :root {
   color-scheme: dark;
-  --background: #020617;
-  --foreground: #f8fafc;
+  --background: #04110a;
+  --foreground: #f2fdf4;
+  --accent: #86efac;
+  --accent-strong: #22c55e;
 }
 
 * {

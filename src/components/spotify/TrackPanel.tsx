@@ -68,7 +68,7 @@ export function TrackPanel({
   const feedback = playerError ?? playerMessage;
 
   return (
-    <aside className="z-10 flex w-full max-w-xl flex-col gap-4 rounded-lg border border-white/10 bg-slate-950/72 p-4 shadow-2xl shadow-cyan-950/40 backdrop-blur md:w-[390px]">
+    <aside className="z-10 flex w-full max-w-xl flex-col gap-4 rounded-lg border border-white/10 bg-[#07140d]/72 p-4 shadow-2xl shadow-emerald-950/40 backdrop-blur md:w-[390px]">
       <div className="flex items-center justify-between gap-3">
         <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Controls</p>
         <button
@@ -87,15 +87,15 @@ export function TrackPanel({
           {track?.albumArt ? (
             <Image src={track.albumArt} alt="" fill sizes="80px" className="object-cover" unoptimized={track.albumArt.startsWith("data:")} />
           ) : (
-            <Radio className="m-6 h-8 w-8 text-cyan-200" />
+            <Radio className="m-6 h-8 w-8 text-emerald-200" />
           )}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-xs uppercase tracking-[0.2em] text-cyan-200">{isDemo ? "Demo signal" : "Spotify signal"}</p>
+          <p className="text-xs uppercase tracking-[0.2em] text-emerald-200">{isDemo ? "Demo signal" : "Spotify signal"}</p>
           <h1 className="truncate text-xl font-semibold text-white">{track?.name ?? emptyTitle}</h1>
           <p className="truncate text-sm text-slate-300">{track?.artist ?? emptySubtitle}</p>
           <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10">
-            <div className="h-full rounded-full bg-cyan-300" style={{ width: `${progressPct}%` }} />
+            <div className="h-full rounded-full bg-emerald-300" style={{ width: `${progressPct}%` }} />
           </div>
         </div>
       </div>
@@ -117,7 +117,7 @@ export function TrackPanel({
           className={`rounded-md border p-3 text-sm ${
             playerError
               ? "border-rose-300/25 bg-rose-400/10 text-rose-100"
-              : "border-cyan-300/20 bg-cyan-300/10 text-cyan-50"
+              : "border-emerald-300/20 bg-emerald-300/10 text-emerald-50"
           }`}
         >
           {feedback}
@@ -148,7 +148,7 @@ export function TrackPanel({
             disabled={!track}
             onChange={(event) => onSeek(Number(event.currentTarget.value))}
             aria-label="Playback position"
-            className="h-2 w-full accent-cyan-300 disabled:opacity-45"
+            className="h-2 w-full accent-emerald-300 disabled:opacity-45"
           />
           <div className="flex justify-between font-mono text-xs text-slate-400">
             <span>{formatTime(progress)}</span>
@@ -186,7 +186,7 @@ export function TrackPanel({
               key={item}
               onClick={() => onMood(item)}
               className={`h-9 rounded-md border text-sm capitalize transition ${
-                mood === item ? "border-cyan-200 bg-cyan-300 text-slate-950" : "border-white/10 bg-white/6 text-slate-200 hover:bg-white/10"
+                mood === item ? "border-emerald-200 bg-emerald-300 text-slate-950" : "border-white/10 bg-white/6 text-slate-200 hover:bg-white/10"
               }`}
             >
               {item}

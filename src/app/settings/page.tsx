@@ -5,7 +5,8 @@ const envRows = [
   ["SPOTIFY_CLIENT_ID", process.env.SPOTIFY_CLIENT_ID],
   ["SPOTIFY_CLIENT_SECRET", process.env.SPOTIFY_CLIENT_SECRET],
   ["NEXT_PUBLIC_APP_URL", process.env.NEXT_PUBLIC_APP_URL],
-  ["SPOTIFY_REDIRECT_URI", process.env.SPOTIFY_REDIRECT_URI]
+  ["SPOTIFY_REDIRECT_URI", process.env.SPOTIFY_REDIRECT_URI],
+  ["AUDIO_ANALYSIS_API_URL", process.env.AUDIO_ANALYSIS_API_URL]
 ];
 
 export default function SettingsPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
@@ -15,10 +16,10 @@ export default function SettingsPage({ searchParams }: { searchParams: Promise<{
 async function SettingsContent({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
   const params = await searchParams;
   return (
-    <main className="min-h-dvh bg-slate-950 px-5 py-10 text-white">
+    <main className="min-h-dvh bg-[#04110a] px-5 py-10 text-white">
       <div className="mx-auto max-w-4xl">
         <nav className="mb-8 flex items-center justify-between">
-          <Link href="/" className="text-sm font-semibold tracking-[0.22em] text-cyan-100">AI MUSIC X-RAY</Link>
+          <Link href="/" className="text-sm font-semibold tracking-[0.22em] text-emerald-100">AI MUSIC X-RAY</Link>
           <Link href="/app" className="text-sm text-slate-300 hover:text-white">Open app</Link>
         </nav>
         <h1 className="text-4xl font-semibold">Settings</h1>
@@ -44,8 +45,9 @@ async function SettingsContent({ searchParams }: { searchParams: Promise<{ error
         <section className="mt-8 rounded-lg border border-white/10 bg-white/[0.07] p-5">
           <h2 className="text-xl font-semibold">External analysis service</h2>
           <p className="mt-2 text-slate-300">
-            Disabled by default. The app uses generated beats and simulated stems unless you connect a separate Python or GPU service to
-            <span className="font-mono text-cyan-100"> /api/external-analysis</span>.
+            Disabled by default. The app uses generated beats and simulated stems unless you connect a separate Python service and point
+            the server-side proxy at <span className="font-mono text-emerald-100">/api/analyze-track</span> with
+            <span className="font-mono text-emerald-100"> AUDIO_ANALYSIS_API_URL</span>.
           </p>
         </section>
       </div>

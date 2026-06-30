@@ -19,7 +19,7 @@ export function MusicVisualizer(props: VisualizerProps) {
   const palette = moodPalettes[props.mood];
 
   return (
-    <div className="fixed inset-0 h-dvh w-dvw max-w-[100dvw] overflow-hidden bg-slate-950">
+    <div className="fixed inset-0 h-dvh w-dvw max-w-[100dvw] overflow-hidden bg-[#04110a]">
       <Canvas className="h-full w-full" camera={{ position: [0, 0, 8], fov: 58 }} gl={{ antialias: true, alpha: false }}>
         <color attach="background" args={[palette.bg]} />
         <fog attach="fog" args={[palette.bg, 8, 22]} />
