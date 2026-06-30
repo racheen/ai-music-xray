@@ -3,6 +3,7 @@
 A full-stack Next.js App Router music visualizer for Vercel. Users can connect Spotify, play a track through the Spotify Web Playback SDK, and see real-time Three.js visuals driven by beat data, progress, tempo, sections, and simulated stems.
 
 The app runs end-to-end immediately in demo mode. Spotify analysis endpoints are attempted when available, then the app gracefully falls back to generated beat and stem data.
+When `AUDIO_ANALYSIS_API_URL` is configured, the Next.js server route `/api/analyze-track` forwards requests to a separate Python FastAPI service and still falls back to simulated analysis if that service is unavailable.
 
 ## Tech stack
 
@@ -12,6 +13,7 @@ The app runs end-to-end immediately in demo mode. Spotify analysis endpoints are
 - Spotify Web API and Spotify Web Playback SDK
 - Secure server-side Spotify OAuth routes
 - Optional external AI analysis interface for open-source models
+- Separate containerized Python FastAPI service for production-style audio analysis
 
 ## Local setup
 
@@ -40,6 +42,7 @@ SPOTIFY_CLIENT_ID="..."
 SPOTIFY_CLIENT_SECRET="..."
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
 SPOTIFY_REDIRECT_URI="http://localhost:3000/api/spotify/callback"
+AUDIO_ANALYSIS_API_URL="http://localhost:8000"
 ```
 
 The Spotify client secret is only read inside server route handlers. It is never exposed to client components.
@@ -115,7 +118,7 @@ Database starter files:
 Example contract:
 
 ```http
-POST /api/external-analysis
+POST /api/analyze-track
 Content-Type: application/json
 
 {
@@ -128,11 +131,13 @@ Returns:
 
 ```json
 {
+  "trackId": "spotify-track-id",
+  "tempo": 122,
   "stems": {
-    "vocals": [0.1, 0.4],
-    "drums": [0.8, 0.2],
-    "bass": [0.6, 0.7],
-    "other": [0.3, 0.5]
+    "vocals": 0.1,
+    "drums": 0.8,
+    "bass": 0.6,
+    "other": 0.3
   },
   "beats": [{ "start": 0, "duration": 0.5, "confidence": 0.9 }],
   "mood": "hype",

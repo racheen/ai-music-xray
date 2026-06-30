@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: audio-analysis-config
+  namespace: ai-music-xray
+data:
+  LOG_LEVEL: info
+  SERVICE_PORT: "8000"
+  AUDIO_MODEL_NAME: placeholder-librosa-pipeline
+

@@ -6,6 +6,8 @@ export type ExternalAnalysisRequest = {
 };
 
 export type ExternalAnalysisResponse = {
+  trackId: string;
+  tempo: number;
   stems: {
     vocals: number[];
     drums: number[];

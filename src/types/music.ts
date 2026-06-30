@@ -14,6 +14,8 @@ export type TrackAnalysis = {
     loudness?: number;
     tempo?: number;
   }>;
+  mood?: Mood;
+  stems?: StemFrame;
 };
 
 export type StemFrame = {

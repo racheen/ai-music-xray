@@ -1,0 +1,36 @@
+name: Audio Analysis CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test-build-push:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/audio-analysis
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Run service checks
+        run: python -m compileall app
+      - name: Build Docker image
+        run: docker build -t audio-analysis:ci .
+      - name: Log in to registry
+        if: github.ref == 'refs/heads/main'
+        run: echo "${{ secrets.CR_PAT }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+      - name: Tag and push image
+        if: github.ref == 'refs/heads/main'
+        run: |
+          docker tag audio-analysis:ci ghcr.io/${{ github.repository_owner }}/ai-music-xray-audio-analysis:latest
+          docker push ghcr.io/${{ github.repository_owner }}/ai-music-xray-audio-analysis:latest
+      - name: Optional deploy note
+        if: github.ref == 'refs/heads/main'
+        run: echo "Deploy to Kubernetes with your preferred GitOps or kubectl step."
+
