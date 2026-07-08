@@ -1,5 +1,6 @@
 "use client";
 
+import { OrbitControls, Stars } from "@react-three/drei";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
@@ -20,13 +21,26 @@ export function MusicVisualizer(props: VisualizerProps) {
 
   return (
     <div className="fixed inset-0 h-dvh w-dvw max-w-[100dvw] overflow-hidden bg-[#04110a]">
-      <Canvas className="h-full w-full" camera={{ position: [0, 0, 8], fov: 58 }} gl={{ antialias: true, alpha: false }}>
+      <Canvas className="h-full w-full touch-none" camera={{ position: [0, 0, 8], fov: 58 }} gl={{ antialias: true, alpha: false }}>
         <color attach="background" args={[palette.bg]} />
         <fog attach="fog" args={[palette.bg, 8, 22]} />
-        <ambientLight intensity={0.35} />
-        <pointLight position={[3, 4, 5]} intensity={2.2} color={palette.vocals} />
-        <pointLight position={[-5, -3, 3]} intensity={1.4} color={palette.drums} />
+        <ambientLight intensity={0.45} />
+        <pointLight position={[3, 4, 5]} intensity={2.8} color={palette.vocals} />
+        <pointLight position={[-5, -3, 3]} intensity={1.9} color={palette.drums} />
+        <pointLight position={[0, 1.2, 0]} intensity={3.8} color={palette.bass} />
+        <Stars radius={42} depth={32} count={1600} factor={2.5} saturation={0} fade speed={0.2} />
         <ResponsiveScene {...props} />
+        <OrbitControls
+          makeDefault
+          enablePan={false}
+          autoRotate={!props.isPlaying}
+          autoRotateSpeed={0.35}
+          rotateSpeed={0.7}
+          minDistance={5.6}
+          maxDistance={10.8}
+          minPolarAngle={Math.PI / 2.8}
+          maxPolarAngle={Math.PI / 1.9}
+        />
       </Canvas>
     </div>
   );
@@ -57,6 +71,7 @@ function Scene({ analysis, progressMs, isPlaying, mood, layers }: VisualizerProp
 
   return (
     <group rotation={[0.08, 0, 0]}>
+      <OrbitalGrid color={palette.other} />
       {layers.other ? <ParticleField time={seconds} intensity={stems.other} color={palette.other} isPlaying={isPlaying} /> : null}
       {layers.bass ? <BassBlob time={seconds} intensity={stems.bass} color={palette.bass} /> : null}
       {layers.vocals ? <VocalRibbon time={seconds} intensity={stems.vocals} color={palette.vocals} /> : null}
@@ -89,7 +104,7 @@ function BassBlob({ time, intensity, color }: { time: number; intensity: number;
 
   return (
     <mesh ref={mesh} geometry={geometry}>
-      <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.55 + intensity * 1.2} roughness={0.25} metalness={0.35} wireframe />
+      <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.7 + intensity * 1.35} roughness={0.22} metalness={0.28} transparent opacity={0.9} />
     </mesh>
   );
 }
@@ -163,5 +178,18 @@ function ParticleField({ time, intensity, color, isPlaying }: { time: number; in
     <points ref={pointsRef} geometry={geometry} scale={[isPortrait ? 1.35 : 1, isPortrait ? 1.08 : 1, 1]}>
       <pointsMaterial color={color} size={0.028 + intensity * 0.045} transparent opacity={0.62} depthWrite={false} />
     </points>
+  );
+}
+
+function OrbitalGrid({ color }: { color: string }) {
+  return (
+    <group rotation={[Math.PI / 2, 0, 0]} position={[0, -1.2, 0]}>
+      {[2.2, 3.2, 4.2, 5.2].map((radius, index) => (
+        <mesh key={radius} rotation={[0, 0, index * 0.16]}>
+          <torusGeometry args={[radius, 0.014, 12, 140]} />
+          <meshBasicMaterial color={color} transparent opacity={0.22 - index * 0.03} />
+        </mesh>
+      ))}
+    </group>
   );
 }
