@@ -4,11 +4,12 @@
 
 AI Music X-Ray is a full-stack Next.js App Router app that turns Spotify playback and listening history into a real-time music visualizer and analytics surface.
 
-The product mixes three layers:
+The product mixes four layers:
 
 - a demo-friendly visualizer that works without credentials
 - a Spotify-connected playback experience with server-side auth
 - an analysis pipeline for beat, section, stem, and revival-style music insights
+- a model-comparison layer that evaluates multiple LLMs on the same track
 
 ## Product Goals
 
@@ -28,6 +29,7 @@ The repository already includes:
 - history export and revival analytics routes
 - a Postgres starter migration for music revival analytics
 - docs for the first sprint
+- a model battle dashboard, provider abstraction, and evaluation schema
 
 ## What This Repo Is Not
 
@@ -43,6 +45,7 @@ The repository already includes:
 - Keep demo mode working when external services are unavailable.
 - Separate UI, playback, analytics, and data concerns.
 - Let the design feel calm, technical, and intentional.
+- Keep every provider on the same normalized input for fair comparison.
 
 ## Visual Direction
 
@@ -58,4 +61,4 @@ The repository already includes:
 - tighten the green-hued visual language across the app shell and landing surfaces
 - keep the project docs aligned with the actual repository shape
 - preserve the production-ready Spotify/server boundary while the visual language evolves
-
+- keep the AI comparison workflow readable enough to explain in a portfolio interview
