@@ -61,7 +61,7 @@ export default function SpotifyHistoryPage() {
             AI MUSIC X-RAY
           </Link>
           <div className="flex flex-wrap gap-2 text-sm">
-            <Link href="/app" className="inline-flex h-10 items-center justify-center rounded-md border border-white/10 bg-white/6 px-3 text-slate-200 hover:bg-white/10">
+            <Link href="/visualizer" className="inline-flex h-10 items-center justify-center rounded-md border border-white/10 bg-white/6 px-3 text-slate-200 hover:bg-white/10">
               Visualizer
             </Link>
             <a href="/api/analytics/spotify-history" className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-white/10 bg-white/6 px-3 text-slate-200 hover:bg-white/10">

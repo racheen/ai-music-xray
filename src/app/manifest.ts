@@ -5,7 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "AI Music X-Ray",
     short_name: "Music X-Ray",
     description: "A Spotify-powered AI music visualizer and personal music analytics platform.",
-    start_url: "/app",
+    start_url: "/visualizer",
     scope: "/",
     display: "standalone",
     background_color: "#020617",

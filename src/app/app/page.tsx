@@ -1,5 +1,5 @@
-import { AppShell } from "@/components/visualizer/AppShell";
+import { redirect } from "next/navigation";
 
-export default function VisualizerPage() {
-  return <AppShell />;
+export default function LegacyVisualizerPage() {
+  redirect("/visualizer");
 }

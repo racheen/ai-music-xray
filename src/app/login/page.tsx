@@ -28,7 +28,7 @@ async function LoginContent({ searchParams }: { searchParams: Promise<{ error?: 
             disconnectedLabel="Continue with Spotify"
             className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-emerald-300 px-4 text-sm font-semibold text-slate-950 hover:bg-emerald-200"
           />
-          <a href="/app" className="inline-flex h-11 items-center justify-center rounded-md border border-white/10 bg-white/6 px-4 text-sm text-white hover:bg-white/10">
+          <a href="/visualizer" className="inline-flex h-11 items-center justify-center rounded-md border border-white/10 bg-white/6 px-4 text-sm text-white hover:bg-white/10">
             Open demo mode
           </a>
           <a href="/spotify-history" className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-white/10 bg-white/6 px-4 text-sm text-white hover:bg-white/10">

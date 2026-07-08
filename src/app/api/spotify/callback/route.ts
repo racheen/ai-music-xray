@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
     refresh_token: string;
     expires_in: number;
   };
-  const response = NextResponse.redirect(`${appUrl}/app`);
+  const response = NextResponse.redirect(`${appUrl}/visualizer`);
   writeSession(response, {
     accessToken: token.access_token,
     refreshToken: token.refresh_token,
