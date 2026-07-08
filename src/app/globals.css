@@ -6,6 +6,7 @@
   --foreground: #f2fdf4;
   --accent: #86efac;
   --accent-strong: #22c55e;
+  --focus-ring: rgba(134, 239, 172, 0.6);
 }
 
 * {
@@ -28,6 +29,7 @@ body {
   overflow-x: clip;
   position: relative;
   width: 100%;
+  text-rendering: optimizeLegibility;
 }
 
 a {
@@ -42,4 +44,14 @@ a {
 canvas {
   display: block;
   max-width: 100dvw;
+}
+
+::selection {
+  background: rgba(134, 239, 172, 0.24);
+  color: #f8fff7;
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
 }
