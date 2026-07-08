@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { ArrowLeft, ArrowRight, ChevronDown, ExternalLink, Music2, Radar, Sparkles } from "lucide-react";
@@ -89,6 +90,35 @@ export function ModelBattleResults() {
   return (
     <OrbitBackdrop contentClassName="px-4 py-6 md:px-6 lg:px-8">
       <main className="mx-auto flex min-h-dvh max-w-7xl flex-col gap-6">
+        <nav className="flex flex-wrap items-center justify-between gap-4 rounded-full border border-white/10 bg-black/25 px-4 py-3 text-sm backdrop-blur">
+          <Link href="/" className="inline-flex items-center gap-3 font-semibold tracking-[0.28em] text-emerald-100">
+            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-emerald-300/30 bg-emerald-300/10">
+              ◉
+            </span>
+            AI MUSIC X-RAY
+          </Link>
+          <div className="hidden items-center gap-2 text-xs uppercase tracking-[0.2em] text-slate-400 md:flex">
+            <Link href="/model-battle" className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-slate-300 hover:bg-white/10">
+              Model Battle
+            </Link>
+            <Link href="/results" className="rounded-full border border-emerald-300/30 bg-emerald-300/10 px-4 py-2 text-emerald-100">
+              Results
+            </Link>
+            <Link href="/model-battle/history" className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-slate-300 hover:bg-white/10">
+              History
+            </Link>
+            <Link href="/settings" className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-slate-300 hover:bg-white/10">
+              Settings
+            </Link>
+          </div>
+          <div className="flex items-center gap-2">
+            <Link href="/model-battle/history" className="inline-flex h-10 items-center justify-center rounded-full border border-white/10 bg-white/5 px-4 text-slate-200 hover:bg-white/10">
+              View History
+            </Link>
+            <div className="h-10 w-10 rounded-full border border-white/10 bg-[radial-gradient(circle_at_30%_30%,rgba(134,239,172,.6),rgba(4,17,10,.85))]" aria-hidden="true" />
+          </div>
+        </nav>
+
         <header className="flex flex-col gap-4 rounded-[2rem] border border-white/10 bg-[linear-gradient(180deg,rgba(5,17,11,.96),rgba(5,17,11,.72))] p-5 shadow-2xl shadow-emerald-950/20 md:p-6 xl:flex-row xl:items-end xl:justify-between">
           <div className="max-w-3xl space-y-3">
             <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-300/10 px-3 py-1 text-xs uppercase tracking-[0.24em] text-emerald-100">

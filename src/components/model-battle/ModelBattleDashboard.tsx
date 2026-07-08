@@ -142,17 +142,32 @@ export function ModelBattleDashboard({ providers }: Props) {
   return (
     <OrbitBackdrop contentClassName="px-4 py-6 md:px-6 lg:px-8">
       <main className="mx-auto flex min-h-dvh max-w-7xl flex-col gap-6">
-        <nav className="flex flex-wrap items-center justify-between gap-3 text-sm">
-          <Link href="/" className="font-semibold tracking-[0.24em] text-emerald-100">
+        <nav className="flex flex-wrap items-center justify-between gap-4 rounded-full border border-white/10 bg-black/25 px-4 py-3 text-sm backdrop-blur">
+          <Link href="/" className="inline-flex items-center gap-3 font-semibold tracking-[0.28em] text-emerald-100">
+            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-emerald-300/30 bg-emerald-300/10">
+              ◉
+            </span>
             AI MUSIC X-RAY
           </Link>
-          <div className="flex flex-wrap gap-2">
-            <Link href="/app" className="inline-flex h-10 items-center justify-center rounded-md border border-white/10 bg-white/5 px-3 text-slate-200 hover:bg-white/10">
-              Visualizer
+          <div className="hidden items-center gap-2 text-xs uppercase tracking-[0.2em] text-slate-400 md:flex">
+            <Link href="/model-battle" className="rounded-full border border-emerald-300/30 bg-emerald-300/10 px-4 py-2 text-emerald-100">
+              Model Battle
             </Link>
-            <Link href="/model-battle/history" className="inline-flex h-10 items-center justify-center rounded-md border border-white/10 bg-white/5 px-3 text-slate-200 hover:bg-white/10">
-              Saved runs
+            <Link href="/results" className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-slate-300 hover:bg-white/10">
+              Results
             </Link>
+            <Link href="/model-battle/history" className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-slate-300 hover:bg-white/10">
+              History
+            </Link>
+            <Link href="/settings" className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-slate-300 hover:bg-white/10">
+              Settings
+            </Link>
+          </div>
+          <div className="flex items-center gap-2">
+            <Link href="/model-battle/history" className="inline-flex h-10 items-center justify-center rounded-full border border-white/10 bg-white/5 px-4 text-slate-200 hover:bg-white/10">
+              View History
+            </Link>
+            <div className="h-10 w-10 rounded-full border border-white/10 bg-[radial-gradient(circle_at_30%_30%,rgba(134,239,172,.6),rgba(4,17,10,.85))]" aria-hidden="true" />
           </div>
         </nav>
 
