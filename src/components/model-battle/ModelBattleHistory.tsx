@@ -1,9 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowRight, CalendarDays, FileSliders, Loader2, Search } from "lucide-react";
+import { ArrowRight, FileSliders, Loader2, Search } from "lucide-react";
+import { BattleActionLink, BattlePanel, BattleSectionLabel, BattleShell } from "./BattleShell";
 import { OrbitBackdrop } from "./OrbitBackdrop";
+import { loadRecentBattleStates } from "@/lib/model-battle/storage";
 import type { AnalysisHistoryRow } from "@/lib/model-battle/types";
 
 type HistoryPayload = {
@@ -25,10 +26,12 @@ export function ModelBattleHistory() {
         const response = await fetch("/api/model-battle/history?limit=100", { cache: "no-store" });
         const payload = (await response.json()) as HistoryPayload;
         if (cancelled) return;
-        setRows(payload.runs ?? []);
+        const localRows = localHistoryRows();
+        const merged = mergeRows(payload.runs ?? [], localRows);
+        setRows(merged);
         setWarning(payload.warning ?? null);
       } catch {
-        if (!cancelled) setRows([]);
+        if (!cancelled) setRows(localHistoryRows());
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -45,44 +48,36 @@ export function ModelBattleHistory() {
   }, [query, rows]);
 
   return (
-    <OrbitBackdrop contentClassName="px-4 py-6 md:px-6 lg:px-8">
-      <main className="mx-auto flex min-h-dvh max-w-7xl flex-col gap-6">
-        <header className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5 shadow-2xl shadow-emerald-950/15 md:p-6">
+    <OrbitBackdrop contentClassName="pb-10">
+      <BattleShell
+        currentRoute="history"
+        routeLabel="4. History"
+        routePath="/model-battle/history"
+        action={<BattleActionLink href="/model-battle" variant="primary">Compare new music</BattleActionLink>}
+      >
+        <BattlePanel className="p-5 md:p-6">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <div className="max-w-3xl space-y-3">
-              <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs uppercase tracking-[0.24em] text-slate-400">
-                <CalendarDays size={14} />
-                History
-              </div>
-              <h1 className="text-4xl font-semibold tracking-tight md:text-6xl">Previous battles</h1>
-              <p className="text-base leading-7 text-slate-300 md:text-lg">
-                Review prior comparisons, open the full result, and jump back into the same musical question whenever you need a second pass.
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Link href="/model-battle" className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-emerald-300 px-4 text-sm font-medium text-slate-950 hover:bg-emerald-200">
-                Compare New Music
-                <ArrowRight size={16} />
-              </Link>
-              <Link href="/results" className="inline-flex h-11 items-center justify-center rounded-md border border-white/12 bg-white/6 px-4 text-sm font-medium text-white hover:bg-white/10">
-                View Latest Results
-              </Link>
-            </div>
+            <BattleSectionLabel
+              label="Saved Runs"
+              title="Review and reopen previous battles."
+              description="Filter by track, artist, or the model that produced the strongest answer, then jump straight back into the saved result."
+            />
+            <BattleActionLink href="/results">
+              View latest results
+              <ArrowRight size={16} />
+            </BattleActionLink>
           </div>
-        </header>
+        </BattlePanel>
 
-        <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-4 md:p-6">
+        <BattlePanel className="p-4 md:p-6">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Saved runs</p>
-              <h2 className="mt-1 text-2xl font-semibold">Archive</h2>
-            </div>
+            <BattleSectionLabel label="Archive" title="Saved runs" />
             <div className="flex w-full max-w-md items-center gap-2 rounded-2xl border border-white/10 bg-[#07140d] px-3 py-2">
               <Search size={16} className="text-slate-500" />
               <input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Filter track, artist, or best model"
+                placeholder="Search track or artist..."
                 className="w-full bg-transparent text-sm text-white outline-none placeholder:text-slate-500"
               />
             </div>
@@ -92,7 +87,7 @@ export function ModelBattleHistory() {
 
           <div className="mt-5 overflow-hidden rounded-[1.5rem] border border-white/10">
             <div className="overflow-x-auto">
-              <table className="min-w-[1120px] w-full border-separate border-spacing-0 text-left">
+              <table className="w-full min-w-[1120px] border-separate border-spacing-0 text-left">
                 <thead>
                   <tr>
                     <th className="sticky left-0 top-0 z-30 border-b border-r border-white/10 bg-[#06120c] px-4 py-4 text-xs uppercase tracking-[0.22em] text-slate-400">Track</th>
@@ -134,13 +129,10 @@ export function ModelBattleHistory() {
                           <MetricTag value={Math.round(row.averageHallucinationRisk)} tone="warn" />
                         </td>
                         <td className="px-4 py-4">
-                          <Link
-                            href={`/results?runId=${row.id}`}
-                            className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-white/12 bg-white/6 px-4 text-sm font-medium text-white hover:bg-white/10"
-                          >
+                          <BattleActionLink href={`/model-battle/results/${row.id}`} className="rounded-xl">
                             Open result
                             <FileSliders size={16} />
-                          </Link>
+                          </BattleActionLink>
                         </td>
                       </tr>
                     ))
@@ -155,8 +147,8 @@ export function ModelBattleHistory() {
               </table>
             </div>
           </div>
-        </section>
-      </main>
+        </BattlePanel>
+      </BattleShell>
     </OrbitBackdrop>
   );
 }
@@ -165,4 +157,34 @@ function MetricTag({ value, tone }: { value: number; tone: "accent" | "warn" }) 
   const className =
     tone === "accent" ? "border-emerald-300/20 bg-emerald-300/10 text-emerald-50" : "border-amber-300/20 bg-amber-300/10 text-amber-50";
   return <span className={`inline-flex rounded-full border px-3 py-1 text-sm font-medium ${className}`}>{value}%</span>;
+}
+
+function localHistoryRows(): AnalysisHistoryRow[] {
+  return loadRecentBattleStates().map(({ run }) => ({
+    id: run.id,
+    createdAt: run.createdAt,
+    mode: run.mode,
+    trackName: run.track.name,
+    artistName: run.track.artistName,
+    bestOverallAnswer: run.summary.bestOverallAnswer,
+    providerCount: run.providerCount,
+    averageConfidence: average(run.outputs.map((output) => output.parsed.confidence)),
+    averageHallucinationRisk: average(run.outputs.map((output) => output.hallucinationRisk)),
+    summary: run.outputs[0]?.parsed.summary ?? run.summary.bestOverallAnswer
+  }));
+}
+
+function mergeRows(primary: AnalysisHistoryRow[], fallback: AnalysisHistoryRow[]) {
+  const seen = new Set<string>();
+  const merged = [...primary, ...fallback].filter((row) => {
+    if (seen.has(row.id)) return false;
+    seen.add(row.id);
+    return true;
+  });
+  return merged.sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime());
+}
+
+function average(values: number[]) {
+  if (!values.length) return 0;
+  return values.reduce((sum, value) => sum + value, 0) / values.length;
 }

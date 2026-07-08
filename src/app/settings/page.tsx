@@ -1,12 +1,19 @@
 import { CheckCircle2, CircleAlert } from "lucide-react";
-import Link from "next/link";
+import { BattleActionLink, BattlePanel, BattleSectionLabel, BattleShell } from "@/components/model-battle/BattleShell";
+import { OrbitBackdrop } from "@/components/model-battle/OrbitBackdrop";
 
 const envRows = [
   ["SPOTIFY_CLIENT_ID", process.env.SPOTIFY_CLIENT_ID],
   ["SPOTIFY_CLIENT_SECRET", process.env.SPOTIFY_CLIENT_SECRET],
   ["NEXT_PUBLIC_APP_URL", process.env.NEXT_PUBLIC_APP_URL],
   ["SPOTIFY_REDIRECT_URI", process.env.SPOTIFY_REDIRECT_URI],
-  ["AUDIO_ANALYSIS_API_URL", process.env.AUDIO_ANALYSIS_API_URL]
+  ["DATABASE_URL", process.env.DATABASE_URL],
+  ["AUDIO_ANALYSIS_API_URL", process.env.AUDIO_ANALYSIS_API_URL],
+  ["OPENAI_API_KEY", process.env.OPENAI_API_KEY],
+  ["ANTHROPIC_API_KEY", process.env.ANTHROPIC_API_KEY],
+  ["GEMINI_API_KEY", process.env.GEMINI_API_KEY],
+  ["MISTRAL_API_KEY", process.env.MISTRAL_API_KEY],
+  ["OLLAMA_BASE_URL", process.env.OLLAMA_BASE_URL]
 ];
 
 export default function SettingsPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
@@ -15,42 +22,103 @@ export default function SettingsPage({ searchParams }: { searchParams: Promise<{
 
 async function SettingsContent({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
   const params = await searchParams;
+  const configuredCount = envRows.filter(([, value]) => Boolean(value)).length;
+
   return (
-    <main className="min-h-dvh bg-[#04110a] px-5 py-10 text-white">
-      <div className="mx-auto max-w-4xl">
-        <nav className="mb-8 flex items-center justify-between">
-          <Link href="/" className="text-sm font-semibold tracking-[0.22em] text-emerald-100">AI MUSIC X-RAY</Link>
-          <Link href="/app" className="text-sm text-slate-300 hover:text-white">Open app</Link>
-        </nav>
-        <h1 className="text-4xl font-semibold">Settings</h1>
-        <p className="mt-3 max-w-2xl text-slate-300">
-          Deployment readiness, Spotify configuration, and analysis service status.
-        </p>
-        {params.error ? (
-          <div className="mt-6 rounded-md border border-amber-300/25 bg-amber-300/10 p-4 text-amber-100">
-            {params.error}
-          </div>
-        ) : null}
-        <section className="mt-8 grid gap-4">
-          {envRows.map(([key, value]) => (
-            <div key={key} className="flex items-center justify-between rounded-lg border border-white/10 bg-white/[0.07] p-4">
-              <div>
-                <p className="font-mono text-sm text-slate-200">{key}</p>
-                <p className="mt-1 text-sm text-slate-400">{value ? "Configured" : "Missing"}</p>
-              </div>
-              {value ? <CheckCircle2 className="text-emerald-300" /> : <CircleAlert className="text-amber-300" />}
+    <OrbitBackdrop contentClassName="pb-10">
+      <BattleShell
+        currentRoute="settings"
+        routeLabel="6. Settings"
+        routePath="/settings"
+        action={<BattleActionLink href="/visualizer">Open visualizer</BattleActionLink>}
+      >
+        <BattlePanel className="p-5 md:p-6">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <BattleSectionLabel
+              label="Environment Readiness"
+              title="Provider, Spotify, and analysis-service status."
+              description="This page reflects deployment readiness for the multi-model flow and the Spotify-connected visualizer."
+            />
+            <div className="grid min-w-[14rem] gap-3 sm:grid-cols-2">
+              <ReadinessCard label="Configured variables" value={`${configuredCount}/${envRows.length}`} />
+              <ReadinessCard label="Primary proxy" value="/api/analyze-track" />
             </div>
-          ))}
+          </div>
+          {params.error ? (
+            <div className="mt-5 rounded-[1.5rem] border border-amber-300/25 bg-amber-300/10 p-4 text-sm text-amber-100">
+              {params.error}
+            </div>
+          ) : null}
+        </BattlePanel>
+
+        <section className="grid gap-6 xl:grid-cols-[1.05fr_.95fr]">
+          <BattlePanel className="p-5 md:p-6">
+            <BattleSectionLabel
+              label="API Providers"
+              title="Connection matrix"
+              description="Keys are detected server-side only. Missing values keep the corresponding providers disabled in the battle flow."
+            />
+            <div className="mt-5 grid gap-3">
+              {envRows.map(([key, value]) => (
+                <div key={key} className="flex items-center justify-between rounded-[1.4rem] border border-white/10 bg-white/[0.04] p-4">
+                  <div>
+                    <p className="font-mono text-sm text-slate-200">{key}</p>
+                    <p className="mt-1 text-sm text-slate-400">{value ? "Configured" : "Missing"}</p>
+                  </div>
+                  {value ? <CheckCircle2 className="text-emerald-300" /> : <CircleAlert className="text-amber-300" />}
+                </div>
+              ))}
+            </div>
+          </BattlePanel>
+
+          <div className="grid gap-6">
+            <BattlePanel className="p-5 md:p-6">
+              <BattleSectionLabel
+                label="Spotify Connection"
+                title="Authentication notes"
+                description="Spotify login powers live playback lookup, current-track bootstrapping, and user-specific playback metadata."
+              />
+              <div className="mt-5 grid gap-3">
+                <InfoRow label="Login route" value="/api/spotify/login" />
+                <InfoRow label="Callback route" value="/api/spotify/callback" />
+                <InfoRow label="Session check" value="/api/spotify/session" />
+                <InfoRow label="Live player" value="/api/spotify/player" />
+              </div>
+            </BattlePanel>
+
+            <BattlePanel className="p-5 md:p-6">
+              <BattleSectionLabel
+                label="Analysis Service"
+                title="Proxy and fallback behavior"
+                description="The app uses generated beats and simulated stems unless you connect a separate Python service and point the proxy to it with AUDIO_ANALYSIS_API_URL."
+              />
+              <div className="mt-5 grid gap-3">
+                <InfoRow label="Browser-facing endpoint" value="/api/analyze-track" />
+                <InfoRow label="Service env var" value="AUDIO_ANALYSIS_API_URL" />
+                <InfoRow label="Model battle keys" value="OPENAI_API_KEY, ANTHROPIC_API_KEY, GEMINI_API_KEY, MISTRAL_API_KEY, OLLAMA_BASE_URL" />
+              </div>
+            </BattlePanel>
+          </div>
         </section>
-        <section className="mt-8 rounded-lg border border-white/10 bg-white/[0.07] p-5">
-          <h2 className="text-xl font-semibold">External analysis service</h2>
-          <p className="mt-2 text-slate-300">
-            Disabled by default. The app uses generated beats and simulated stems unless you connect a separate Python service and point
-            the server-side proxy at <span className="font-mono text-emerald-100">/api/analyze-track</span> with
-            <span className="font-mono text-emerald-100"> AUDIO_ANALYSIS_API_URL</span>.
-          </p>
-        </section>
-      </div>
-    </main>
+      </BattleShell>
+    </OrbitBackdrop>
+  );
+}
+
+function ReadinessCard({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-[1.5rem] border border-white/10 bg-white/[0.04] px-4 py-3">
+      <div className="text-[11px] uppercase tracking-[0.18em] text-slate-500">{label}</div>
+      <div className="mt-2 text-lg font-semibold text-white">{value}</div>
+    </div>
+  );
+}
+
+function InfoRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-[1.35rem] border border-white/10 bg-[#07140d] px-4 py-3">
+      <div className="text-[11px] uppercase tracking-[0.18em] text-slate-500">{label}</div>
+      <div className="mt-2 break-words font-mono text-sm text-emerald-100">{value}</div>
+    </div>
   );
 }

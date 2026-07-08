@@ -2,20 +2,15 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { type FormEvent, type ReactNode, useEffect, useMemo, useState, useTransition } from "react";
-import { BrainCircuit, Loader2, Radar, SlidersHorizontal, Sparkles } from "lucide-react";
+import { type FormEvent, type ReactNode, useEffect, useState, useTransition } from "react";
+import { BrainCircuit, Loader2, Radar, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { BattleActionLink, BattlePanel, BattleSectionLabel, BattleShell } from "./BattleShell";
 import { OrbitBackdrop } from "./OrbitBackdrop";
-import { ModelBattleOrbit } from "./ModelBattleOrbit";
-import { loadLastBattleInput, saveLastBattleState } from "@/lib/model-battle/storage";
-import { analysisModes, type AnalysisMode, type ModelAnalysisRun, type ProviderAvailability, type ProviderKey } from "@/lib/model-battle/types";
+import { loadLastBattleInput, savePendingBattleInput } from "@/lib/model-battle/storage";
+import { analysisModes, type AnalysisMode, type ProviderAvailability, type ProviderKey } from "@/lib/model-battle/types";
 
 type Props = {
-  providers: ProviderAvailability[];
-};
-
-type ApiResponse = {
-  run: ModelAnalysisRun;
   providers: ProviderAvailability[];
 };
 
@@ -35,7 +30,6 @@ export function ModelBattleDashboard({ providers }: Props) {
   const [question, setQuestion] = useState(defaultQuestion("why-do-i-like-this-song"));
   const [lyricsContext, setLyricsContext] = useState("");
   const [selectedProviders, setSelectedProviders] = useState<ProviderKey[]>(defaultProviders.length ? defaultProviders : ["local"]);
-  const [result, setResult] = useState<ModelAnalysisRun | null>(null);
   const [loading, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -55,17 +49,6 @@ export function ModelBattleDashboard({ providers }: Props) {
     setSelectedProviders(storedInput.providerKeys.slice(0, MAX_COMPARE_MODELS));
   }, [searchParams]);
 
-  const enabledProviders = useMemo(() => providers.filter((provider) => provider.enabled).slice(0, MAX_COMPARE_MODELS), [providers]);
-
-  const selectedComparisonProviders = useMemo(() => {
-    const ordered = selectedProviders
-      .slice(0, MAX_COMPARE_MODELS)
-      .map((key) => providers.find((provider) => provider.key === key))
-      .filter((provider): provider is ProviderAvailability => Boolean(provider))
-      .slice(0, MAX_COMPARE_MODELS);
-    return ordered.length ? ordered : enabledProviders.slice(0, 1);
-  }, [enabledProviders, providers, selectedProviders]);
-
   function toggleProvider(key: ProviderKey) {
     setSelectedProviders((current) => {
       if (current.includes(key)) return current.filter((item) => item !== key);
@@ -80,40 +63,21 @@ export function ModelBattleDashboard({ providers }: Props) {
     startTransition(async () => {
       try {
         const normalizedTrack = normalizeTrackInput(trackUrl);
-        const response = await fetch("/api/model-battle", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            trackUrl: normalizedTrack.trackUrl,
-            trackId: normalizedTrack.trackId,
-            comparisonTrackUrl: comparisonTrackUrl || null,
-            question,
-            mode: analysisMode,
-            providerKeys: selectedProviders,
-            lyricsContext: lyricsContext.trim() || null,
-            useListeningProfile: true
-          }),
-          cache: "no-store"
-        });
-        const payload = (await response.json()) as ApiResponse & { error?: string };
-        if (!response.ok) throw new Error(payload.error ?? "Model battle failed.");
-        saveLastBattleState({
-          run: payload.run,
-          input: {
-            trackUrl: normalizedTrack.trackUrl ?? normalizedTrack.trackId,
-            trackId: normalizedTrack.trackId,
-            comparisonTrackUrl: comparisonTrackUrl || null,
-            question,
-            mode: analysisMode,
-            providerKeys: selectedProviders,
-            lyricsContext: lyricsContext.trim() || null,
-            useListeningProfile: true
-          }
-        });
-        setResult(payload.run);
-        router.push("/results");
-      } catch (error) {
-        setError(error instanceof Error ? error.message : "Unable to start model battle.");
+        const nextInput = {
+          trackUrl: normalizedTrack.trackUrl ?? normalizedTrack.trackId,
+          trackId: normalizedTrack.trackId,
+          comparisonTrackUrl: comparisonTrackUrl || null,
+          question,
+          mode: analysisMode,
+          providerKeys: selectedProviders,
+          lyricsContext: lyricsContext.trim() || null,
+          useListeningProfile: true
+        };
+        const draftRunId = globalThis.crypto?.randomUUID?.() ?? `draft-${Date.now()}`;
+        savePendingBattleInput(draftRunId, nextInput);
+        router.push(`/model-battle/running/${draftRunId}`);
+      } catch (nextError) {
+        setError(nextError instanceof Error ? nextError.message : "Unable to start model battle.");
       }
     });
   }
@@ -134,299 +98,190 @@ export function ModelBattleDashboard({ providers }: Props) {
         setQuestion(`Analyze the currently playing track: ${payload.track.name}.`);
       }
       setAnalysisMode("why-do-i-like-this-song");
-    } catch (error) {
-      setError(error instanceof Error ? error.message : "Unable to load the currently playing track.");
+    } catch (nextError) {
+      setError(nextError instanceof Error ? nextError.message : "Unable to load the currently playing track.");
     }
   }
 
   return (
-    <OrbitBackdrop contentClassName="px-4 py-6 md:px-6 lg:px-8">
-      <main className="mx-auto flex min-h-dvh max-w-7xl flex-col gap-6">
-        <nav className="flex flex-wrap items-center justify-between gap-4 rounded-full border border-white/10 bg-black/25 px-4 py-3 text-sm backdrop-blur">
-          <Link href="/" className="inline-flex items-center gap-3 font-semibold tracking-[0.28em] text-emerald-100">
-            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-emerald-300/30 bg-emerald-300/10">
-              ◉
-            </span>
-            AI MUSIC X-RAY
-          </Link>
-          <div className="hidden items-center gap-2 text-xs uppercase tracking-[0.2em] text-slate-400 md:flex">
-            <Link href="/model-battle" className="rounded-full border border-emerald-300/30 bg-emerald-300/10 px-4 py-2 text-emerald-100">
-              Model Battle
-            </Link>
-            <Link href="/results" className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-slate-300 hover:bg-white/10">
-              Results
-            </Link>
-            <Link href="/model-battle/history" className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-slate-300 hover:bg-white/10">
-              History
-            </Link>
-            <Link href="/settings" className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-slate-300 hover:bg-white/10">
-              Settings
-            </Link>
-          </div>
-          <div className="flex items-center gap-2">
-            <Link href="/model-battle/history" className="inline-flex h-10 items-center justify-center rounded-full border border-white/10 bg-white/5 px-4 text-slate-200 hover:bg-white/10">
-              View History
-            </Link>
-            <div className="h-10 w-10 rounded-full border border-white/10 bg-[radial-gradient(circle_at_30%_30%,rgba(134,239,172,.6),rgba(4,17,10,.85))]" aria-hidden="true" />
-          </div>
-        </nav>
-
-        <section className="grid gap-8 xl:grid-cols-[1.1fr_.9fr] xl:items-start">
-          <div className="space-y-6 pt-4 md:pt-8">
-            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-300/10 px-3 py-1 text-xs uppercase tracking-[0.24em] text-emerald-100">
-              <BrainCircuit size={14} />
-              AI Model Comparison
-            </div>
-            <h1 className="max-w-4xl text-5xl font-semibold leading-[0.95] tracking-tight md:text-7xl">
-              Compare how AI models hear your music.
-            </h1>
-            <p className="max-w-2xl text-lg leading-8 text-slate-300 md:text-xl">
-              Run the same track through multiple AI models and see where they agree, diverge, hallucinate, or reveal new musical insight.
-            </p>
-            <div className="flex flex-wrap gap-2 text-xs uppercase tracking-[0.2em] text-slate-400">
-              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">Mission control</span>
-              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">Maximum 4 models per battle</span>
-              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">Spotify + local fallback</span>
-            </div>
-
-            <form onSubmit={submitAnalysis} className="grid gap-4 rounded-[2rem] border border-white/10 bg-white/[0.05] p-4 shadow-2xl shadow-emerald-950/20 backdrop-blur md:p-6">
-              <div className="grid gap-4 md:grid-cols-2">
-                <Field label="Spotify track link or ID">
-                  <input
-                    value={trackUrl}
-                    onChange={(event) => setTrackUrl(event.target.value)}
-                    className="h-11 w-full rounded-xl border border-white/10 bg-[#07140d] px-4 text-sm text-white outline-none ring-0 placeholder:text-slate-500 focus:border-emerald-300/60"
-                    placeholder="https://open.spotify.com/track/..."
-                  />
-                </Field>
-                <Field label="Comparison track">
-                  <input
-                    value={comparisonTrackUrl}
-                    onChange={(event) => setComparisonTrackUrl(event.target.value)}
-                    className="h-11 w-full rounded-xl border border-white/10 bg-[#07140d] px-4 text-sm text-white outline-none ring-0 placeholder:text-slate-500 focus:border-emerald-300/60"
-                    placeholder="Optional second song"
-                  />
-                </Field>
+    <OrbitBackdrop contentClassName="pb-10">
+      <BattleShell
+        currentRoute="model-battle"
+        routeLabel="1. Model Battle Setup"
+        routePath="/model-battle"
+        action={<BattleActionLink href="/model-battle/history">View history</BattleActionLink>}
+      >
+        <section className="grid gap-6 xl:grid-cols-[0.82fr_1.18fr]">
+          <BattlePanel className="overflow-hidden">
+            <div className="flex h-full flex-col justify-between gap-8 p-6 md:p-7">
+              <div className="space-y-6">
+                <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-300/10 px-3 py-1 text-xs uppercase tracking-[0.24em] text-emerald-100">
+                  <BrainCircuit size={14} />
+                  Compare AI Perspectives
+                </div>
+                <div className="space-y-4">
+                  <h1 className="max-w-md text-4xl font-semibold leading-[0.98] tracking-tight md:text-6xl">
+                    Compare how AI models hear <span className="text-emerald-300">your music.</span>
+                  </h1>
+                  <p className="max-w-md text-sm leading-7 text-slate-300 md:text-base">
+                    Run the same track through multiple AI models and see where they agree, diverge, hallucinate, or reveal new musical insight.
+                  </p>
+                </div>
               </div>
-              <div className="flex flex-wrap gap-2">
+
+              <div className="relative flex min-h-[18rem] items-center justify-center overflow-hidden rounded-[1.7rem] border border-white/8 bg-[radial-gradient(circle_at_30%_35%,rgba(134,239,172,.24),transparent_20%),linear-gradient(180deg,rgba(3,10,6,.88),rgba(7,20,13,.65))]">
+                <div className="absolute left-[-7rem] top-[1.5rem] h-48 w-48 rounded-full border border-emerald-300/20 bg-emerald-200/10 blur-sm" />
+                <div className="absolute inset-0 opacity-60 [background-image:radial-gradient(circle,rgba(167,243,208,.65)_1px,transparent_1px)] [background-size:42px_42px]" />
+                <div className="absolute h-56 w-56 rounded-full border border-emerald-300/25" />
+                <div className="absolute h-72 w-72 rounded-full border border-emerald-300/12" />
+                <div className="absolute h-80 w-80 rounded-full border border-emerald-300/8" />
+                <div className="absolute right-[18%] top-[24%] h-4 w-4 rounded-full bg-emerald-300 shadow-[0_0_26px_rgba(74,222,128,0.9)]" />
+                <div className="absolute left-[23%] top-[58%] h-2.5 w-2.5 rounded-full bg-emerald-200 shadow-[0_0_20px_rgba(167,243,208,0.7)]" />
+              </div>
+
+              <div className="grid gap-3 text-center text-xs uppercase tracking-[0.18em] text-slate-400 sm:grid-cols-3">
+                <OrbitalFeature title="Multi-model" description="comparison" />
+                <OrbitalFeature title="Agreement" description="and disagreement" />
+                <OrbitalFeature title="Hallucination" description="risk detection" />
+              </div>
+            </div>
+          </BattlePanel>
+
+          <BattlePanel className="p-5 md:p-7">
+            <div className="mb-5">
+              <BattleSectionLabel
+                label="Start a New Model Battle"
+                title="Load a track, choose the mode, and launch the comparison."
+                description="Use a Spotify link or live playback, then compare up to four enabled providers with one shared prompt."
+              />
+            </div>
+
+            <form onSubmit={submitAnalysis} className="grid gap-5">
+              <Field label="Spotify track link or ID">
+                <input
+                  value={trackUrl}
+                  onChange={(event) => setTrackUrl(event.target.value)}
+                  className="h-12 w-full rounded-2xl border border-white/10 bg-[#07140d] px-4 text-sm text-white outline-none placeholder:text-slate-500 focus:border-emerald-300/60"
+                  placeholder="https://open.spotify.com/track/..."
+                />
+              </Field>
+
+              <div className="flex flex-wrap items-center gap-3">
                 <button
                   type="button"
                   onClick={() => void loadCurrentlyPlayingTrack()}
-                  className="inline-flex h-10 items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 text-sm text-slate-200 hover:bg-white/10"
+                  className="inline-flex h-10 items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 text-sm text-slate-100 hover:bg-white/10"
                 >
-                  <Sparkles size={16} />
+                  <Sparkles size={15} />
                   Use currently playing track
                 </button>
-                <p className="self-center text-xs uppercase tracking-[0.18em] text-slate-500">
-                  Requires an active Spotify session and something playing in Spotify
-                </p>
+                <p className="text-xs text-slate-500">Requires an active Spotify session and something currently playing.</p>
               </div>
 
-              <div className="grid gap-4 md:grid-cols-[1fr_1fr]">
-                <Field label="Analysis mode">
-                  <select
-                    value={analysisMode}
-                    onChange={(event) => setAnalysisMode(event.target.value as AnalysisMode)}
-                    className="h-11 w-full rounded-xl border border-white/10 bg-[#07140d] px-4 text-sm text-white outline-none focus:border-emerald-300/60"
-                  >
-                    {analysisModes.map((mode) => (
-                      <option key={mode.id} value={mode.id}>
-                        {mode.label}
-                      </option>
-                    ))}
-                  </select>
-                </Field>
-                <Field label="Question">
-                  <input
-                    value={question}
-                    onChange={(event) => setQuestion(event.target.value)}
-                    className="h-11 w-full rounded-xl border border-white/10 bg-[#07140d] px-4 text-sm text-white outline-none placeholder:text-slate-500 focus:border-emerald-300/60"
-                    placeholder="Why does this song feel uplifting?"
-                  />
-                </Field>
-              </div>
+              <Field label="Analysis mode">
+                <select
+                  value={analysisMode}
+                  onChange={(event) => setAnalysisMode(event.target.value as AnalysisMode)}
+                  className="h-12 w-full rounded-2xl border border-white/10 bg-[#07140d] px-4 text-sm text-white outline-none focus:border-emerald-300/60"
+                >
+                  {analysisModes.map((mode) => (
+                    <option key={mode.id} value={mode.id}>
+                      {mode.label}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+
+              <Field label="Your question">
+                <input
+                  value={question}
+                  onChange={(event) => setQuestion(event.target.value)}
+                  className="h-12 w-full rounded-2xl border border-white/10 bg-[#07140d] px-4 text-sm text-white outline-none placeholder:text-slate-500 focus:border-emerald-300/60"
+                  placeholder="What emotional arc does this song follow?"
+                />
+              </Field>
 
               <Field label="Optional lyrics or context">
                 <textarea
                   value={lyricsContext}
                   onChange={(event) => setLyricsContext(event.target.value)}
-                  className="min-h-28 w-full rounded-2xl border border-white/10 bg-[#07140d] px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-emerald-300/60"
-                  placeholder="Paste lyrics, notes, or context that should be shared across all providers."
+                  className="min-h-28 w-full rounded-[1.5rem] border border-white/10 bg-[#07140d] px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-emerald-300/60"
+                  placeholder="Paste lyrics, notes, or any context to share across all models."
                 />
               </Field>
 
-              <div className="space-y-2">
-                <div className="flex items-end justify-between gap-3">
-                  <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Providers</p>
-                  <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Compare up to {MAX_COMPARE_MODELS} models</p>
+              <div className="grid gap-4 xl:grid-cols-[1.2fr_.8fr]">
+                <div className="space-y-3">
+                  <div className="flex items-end justify-between gap-3">
+                    <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Select models to compare</p>
+                    <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Up to {MAX_COMPARE_MODELS}</p>
+                  </div>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {providers.map((provider) => {
+                      const selected = selectedProviders.includes(provider.key);
+                      const selectionFull = selectedProviders.length >= MAX_COMPARE_MODELS;
+                      const disabled = !selected && selectionFull;
+                      return (
+                        <button
+                          key={provider.key}
+                          type="button"
+                          onClick={() => toggleProvider(provider.key)}
+                          className={clsxProvider(selected, disabled)}
+                          disabled={disabled}
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <div className="font-medium text-white">{provider.label}</div>
+                              <p className="mt-1 text-xs text-slate-400">{provider.model}</p>
+                            </div>
+                            <span className={selected ? providerEnabledClass : providerDisabledClass}>{provider.enabled ? "Ready" : "Off"}</span>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {selectedProviders.length >= MAX_COMPARE_MODELS ? (
+                    <p className="rounded-2xl border border-amber-300/20 bg-amber-400/10 px-4 py-3 text-sm text-amber-50">
+                      Maximum {MAX_COMPARE_MODELS} models per battle.
+                    </p>
+                  ) : null}
                 </div>
-                <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-                  {providers.map((provider) => {
-                    const selected = selectedProviders.includes(provider.key);
-                    const selectionFull = selectedProviders.length >= MAX_COMPARE_MODELS;
-                    const disabled = !selected && selectionFull;
-                    return (
-                      <button
-                        key={provider.key}
-                        type="button"
-                        onClick={() => toggleProvider(provider.key)}
-                        className={`rounded-2xl border px-4 py-3 text-left transition ${
-                          selected
-                            ? "border-emerald-300/50 bg-emerald-300/15 text-white shadow-[0_0_0_1px_rgba(134,239,172,0.2)]"
-                            : disabled
-                              ? "cursor-not-allowed border-white/8 bg-white/[0.02] text-slate-500"
-                              : "border-white/10 bg-white/[0.03] text-slate-300 hover:border-emerald-300/25 hover:bg-white/[0.06]"
-                        }`}
-                        disabled={disabled}
-                      >
-                        <div className="flex items-center justify-between gap-3">
-                          <span className="font-medium">{provider.label}</span>
-                          <span className={`rounded-full px-2 py-0.5 text-[11px] uppercase tracking-[0.18em] ${provider.enabled ? "bg-emerald-300/15 text-emerald-100" : "bg-white/5 text-slate-400"}`}>
-                            {provider.enabled ? "Enabled" : "Off"}
-                          </span>
-                        </div>
-                        <p className="mt-2 text-xs text-slate-400">{provider.model}</p>
-                      </button>
-                    );
-                  })}
+
+                <div className="rounded-[1.7rem] border border-white/10 bg-white/[0.03] p-4">
+                  <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Comparison track</p>
+                  <input
+                    value={comparisonTrackUrl}
+                    onChange={(event) => setComparisonTrackUrl(event.target.value)}
+                    className="mt-3 h-11 w-full rounded-2xl border border-white/10 bg-[#07140d] px-4 text-sm text-white outline-none placeholder:text-slate-500 focus:border-emerald-300/60"
+                    placeholder="Optional second song"
+                  />
+                  <div className="mt-4 space-y-3">
+                    <StatusPill label="Selected models" value={String(selectedProviders.length)} />
+                    <StatusPill label="Analysis mode" value={analysisModes.find((mode) => mode.id === analysisMode)?.label ?? analysisMode} />
+                    <StatusPill label="Output route" value="/results" />
+                  </div>
                 </div>
-                {selectedProviders.length >= MAX_COMPARE_MODELS ? (
-                  <p className="rounded-2xl border border-amber-300/20 bg-amber-400/10 px-4 py-3 text-sm text-amber-50">
-                    Maximum {MAX_COMPARE_MODELS} models per battle.
-                  </p>
-                ) : null}
               </div>
 
-              <div className="flex flex-wrap items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3 pt-1">
                 <Button type="submit" disabled={loading} className="h-11 px-5">
                   {loading ? <Loader2 className="animate-spin" size={16} /> : <Radar size={16} />}
                   Run model battle
                 </Button>
                 <Link
                   href="/model-battle/history"
-                  className="inline-flex h-11 items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 text-sm text-slate-200 hover:bg-white/10"
+                  className="inline-flex h-11 items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 text-sm text-slate-100 hover:bg-white/10"
                 >
                   View history
                 </Link>
               </div>
               {error ? <p className="rounded-2xl border border-rose-300/20 bg-rose-400/10 px-4 py-3 text-sm text-rose-100">{error}</p> : null}
             </form>
-          </div>
-
-          <div className="space-y-4 pt-2 md:pt-10">
-            <div className="rounded-[2rem] border border-white/10 bg-white/[0.05] p-4 md:p-5">
-              <div className="mb-4 flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Live board</p>
-                  <h2 className="mt-1 text-xl font-semibold">Disagreement orbit</h2>
-                </div>
-                <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-300/10 px-3 py-1 text-xs text-emerald-100">
-                  <SlidersHorizontal size={14} />
-                  {result?.providerCount ?? selectedProviders.length} models
-                </div>
-              </div>
-              <ModelBattleOrbit outputs={result?.outputs ?? []} summary={result?.summary ?? emptySummary()} />
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Metric label="Most grounded" value={result?.summary.mostGroundedModel ?? "Waiting"} />
-              <Metric label="Best overall" value={result?.summary.bestOverallAnswer ?? "Waiting"} />
-              <Metric label="Most creative" value={result?.summary.mostCreativeModel ?? "Waiting"} />
-              <Metric label="Most cautious" value={result?.summary.mostCautiousModel ?? "Waiting"} />
-            </div>
-          </div>
+          </BattlePanel>
         </section>
 
-        {result ? (
-          <>
-            <section className="grid gap-4 lg:grid-cols-[1fr_1fr]">
-              <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
-                <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Comparison summary</p>
-                <h2 className="mt-2 text-2xl font-semibold">{result.summary.bestOverallAnswer}</h2>
-                <p className="mt-3 text-sm leading-7 text-slate-300">
-                  {result.outputs.find((output) => output.providerName === result.summary.bestOverallAnswer)?.parsed.summary}
-                </p>
-                <div className="mt-4 grid gap-3 md:grid-cols-2">
-                  <SummaryList title="Agreement" items={result.summary.agreesOn} />
-                  <SummaryList title="Disagreement" items={result.summary.disagreesOn} />
-                </div>
-              </div>
-              <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
-                <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Track snapshot</p>
-                <h2 className="mt-2 text-2xl font-semibold">{result.track.name}</h2>
-                <p className="text-sm text-slate-300">{result.track.artistName}</p>
-                <div className="mt-4 grid gap-2 text-sm text-slate-300">
-                  <MetaRow label="Mode" value={result.mode} />
-                  <MetaRow label="Question" value={result.question} />
-                  <MetaRow label="Provider count" value={String(result.providerCount)} />
-                  <MetaRow label="Created" value={new Date(result.createdAt).toLocaleString()} />
-                </div>
-              </div>
-            </section>
-
-            <section className="space-y-4 rounded-[2rem] border border-white/10 bg-white/[0.04] p-4 md:p-6">
-              <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Model battle</p>
-                  <h2 className="mt-1 text-2xl font-semibold">Comparison columns</h2>
-                  <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-300">
-                    Provider cards stay visible while you scroll, and the table keeps the first metric column anchored for fast scanning.
-                  </p>
-                </div>
-                <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-slate-400">
-                  <Sparkles size={14} />
-                  {selectedComparisonProviders.length} / 4 models shown
-                </div>
-              </div>
-
-              <div className="overflow-hidden rounded-[1.75rem] border border-white/10">
-                <div className="overflow-x-auto">
-                  <table className="w-full min-w-[1480px] border-separate border-spacing-0 text-left">
-                    <thead>
-                      <tr>
-                        <th className="sticky left-0 top-0 z-30 w-[15rem] border-b border-r border-white/10 bg-[#06120c] px-4 py-4 text-xs uppercase tracking-[0.22em] text-slate-400">
-                          Metric
-                        </th>
-                        {selectedComparisonProviders.map((provider) => {
-                          const output = result.outputs.find((item) => item.providerKey === provider.key);
-                          return (
-                            <th key={provider.key} className="sticky top-0 z-20 border-b border-white/10 bg-[#06120c] px-3 py-3 align-top">
-                              <div className="rounded-[1.25rem] border border-emerald-300/20 bg-emerald-300/10 px-4 py-3 shadow-sm shadow-emerald-950/20">
-                                <div className="text-sm font-semibold text-white">{provider.label}</div>
-                                <div className="mt-1 text-xs uppercase tracking-[0.18em] text-emerald-100">{provider.model}</div>
-                                <div className="mt-2 text-xs text-slate-300">
-                                  {output ? `${output.latencyMs} ms • ${output.estimatedTokens} est. tokens` : "Waiting"}
-                                </div>
-                              </div>
-                            </th>
-                          );
-                        })}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {comparisonRows.map((row, rowIndex) => (
-                        <tr key={row.label} className={rowIndex % 2 === 0 ? "bg-white/[0.015]" : "bg-white/[0.03]"}>
-                          <th className="sticky left-0 z-20 border-r border-white/10 bg-[#07140d] px-4 py-4 align-top text-sm font-medium text-slate-300">
-                            {row.label}
-                          </th>
-                          {selectedComparisonProviders.map((provider) => {
-                            const output = result.outputs.find((item) => item.providerKey === provider.key);
-                            return (
-                              <td key={provider.key} className="px-4 py-4 align-top text-sm leading-7 text-slate-200">
-                                {output ? row.render(output) : <span className="text-slate-500">Waiting</span>}
-                              </td>
-                            );
-                          })}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </section>
-          </>
-        ) : null}
-      </main>
+        
+      </BattleShell>
     </OrbitBackdrop>
   );
 }
@@ -440,31 +295,19 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
-function Metric({ label, value }: { label: string; value: string }) {
+function OrbitalFeature({ title, description }: { title: string; description: string }) {
   return (
-    <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-4 shadow-sm shadow-black/20 transition-transform duration-300 hover:-translate-y-0.5 hover:border-emerald-300/20">
-      <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{label}</p>
-      <p className="mt-2 break-words text-lg font-semibold text-white">{value}</p>
+    <div className="rounded-[1.3rem] border border-white/10 bg-white/[0.03] px-4 py-3">
+      <div className="font-medium text-emerald-50">{title}</div>
+      <div className="mt-1 text-[11px] text-slate-500">{description}</div>
     </div>
   );
 }
-
-function SummaryList({ title, items }: { title: string; items: string[] }) {
+function StatusPill({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-      <p className="text-xs uppercase tracking-[0.18em] text-slate-400">{title}</p>
-      <ul className="mt-3 space-y-2 text-sm text-slate-200">
-        {items.length ? items.map((item) => <li key={item}>• {item}</li>) : <li className="text-slate-500">No items yet.</li>}
-      </ul>
-    </div>
-  );
-}
-
-function MetaRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-start justify-between gap-4 rounded-2xl border border-white/10 bg-[#07140d] px-3 py-2">
-      <span className="text-slate-400">{label}</span>
-      <span className="max-w-[60%] text-right text-white">{value}</span>
+    <div className="rounded-2xl border border-white/10 bg-[#07140d] px-3 py-2">
+      <div className="text-[11px] uppercase tracking-[0.18em] text-slate-500">{label}</div>
+      <div className="mt-1 text-sm text-white">{value}</div>
     </div>
   );
 }
@@ -493,62 +336,15 @@ function normalizeTrackInput(value: string) {
   return { trackUrl: null, trackId: trimmed };
 }
 
-const comparisonRows = [
-  {
-    label: "Summary",
-    render: (output: ModelAnalysisRun["outputs"][number]) => <p className="leading-7 text-slate-100">{output.parsed.summary}</p>
-  },
-  {
-    label: "Confidence",
-    render: (output: ModelAnalysisRun["outputs"][number]) => <strong className="text-lg text-emerald-100">{Math.round(output.parsed.confidence * 100)}%</strong>
-  },
-  {
-    label: "Hallucination risk",
-    render: (output: ModelAnalysisRun["outputs"][number]) => <span className="text-lg text-amber-100">{output.hallucinationRisk}%</span>
-  },
-  {
-    label: "Latency",
-    render: (output: ModelAnalysisRun["outputs"][number]) => <span>{output.latencyMs} ms</span>
-  },
-  {
-    label: "Emotional tags",
-    render: (output: ModelAnalysisRun["outputs"][number]) => <TagList items={output.parsed.emotional_profile} />
-  },
-  {
-    label: "Genre tags",
-    render: (output: ModelAnalysisRun["outputs"][number]) => <TagList items={output.parsed.genre_hypothesis} />
-  },
-  {
-    label: "Key claims",
-    render: (output: ModelAnalysisRun["outputs"][number]) => <TagList items={output.parsed.evidence.map((entry) => entry.claim)} />
-  },
-  {
-    label: "Limitations",
-    render: (output: ModelAnalysisRun["outputs"][number]) => <TagList items={output.parsed.limitations} />
+function clsxProvider(selected: boolean, disabled: boolean) {
+  if (selected) {
+    return "rounded-[1.4rem] border border-emerald-300/40 bg-emerald-300/12 px-4 py-3 text-left shadow-[0_0_0_1px_rgba(134,239,172,0.12)] transition";
   }
-] as const;
-
-function TagList({ items }: { items: string[] }) {
-  if (!items.length) return <span className="text-slate-500">None</span>;
-  return (
-    <div className="flex flex-wrap gap-2">
-      {items.slice(0, 4).map((item) => (
-        <span key={item} className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-1 text-xs text-slate-200">
-          {item}
-        </span>
-      ))}
-    </div>
-  );
+  if (disabled) {
+    return "cursor-not-allowed rounded-[1.4rem] border border-white/8 bg-white/[0.02] px-4 py-3 text-left text-slate-500 transition";
+  }
+  return "rounded-[1.4rem] border border-white/10 bg-white/[0.03] px-4 py-3 text-left transition hover:border-emerald-300/25 hover:bg-white/[0.06]";
 }
 
-function emptySummary() {
-  return {
-    agreesOn: [],
-    disagreesOn: [],
-    mostCreativeModel: "Waiting",
-    mostGroundedModel: "Waiting",
-    mostCautiousModel: "Waiting",
-    bestOverallAnswer: "Waiting",
-    similarityMatrix: []
-  };
-}
+const providerEnabledClass = "rounded-full border border-emerald-300/20 bg-emerald-300/10 px-2 py-1 text-[10px] uppercase tracking-[0.18em] text-emerald-100";
+const providerDisabledClass = "rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[10px] uppercase tracking-[0.18em] text-slate-400";

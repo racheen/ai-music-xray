@@ -1,13 +1,13 @@
 "use client";
 
-import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
-import { ArrowLeft, ArrowRight, ChevronDown, ExternalLink, Music2, Radar, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronDown, ExternalLink, Music2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { BattleActionLink, BattlePanel, BattleSectionLabel, BattleShell } from "./BattleShell";
 import { OrbitBackdrop } from "./OrbitBackdrop";
 import { ModelBattleOrbit } from "./ModelBattleOrbit";
-import { loadLastBattleState } from "@/lib/model-battle/storage";
+import { loadLastBattleState, loadStoredRunById } from "@/lib/model-battle/storage";
 import type { ModelAnalysisRun, ModelBattleOutput } from "@/lib/model-battle/types";
 
 type BattleState = {
@@ -23,6 +23,7 @@ type MetricCard = {
 export function ModelBattleResults() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const params = useParams<{ runId?: string }>();
   const [battleState, setBattleState] = useState<BattleState | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -31,14 +32,24 @@ export function ModelBattleResults() {
 
     async function load() {
       setLoading(true);
-      const runId = searchParams.get("runId");
+      const runId = (typeof params?.runId === "string" ? params.runId : undefined) ?? searchParams.get("runId");
       const stored = loadLastBattleState();
-      if (stored) {
+      if (stored && (!runId || stored.run.id === runId)) {
         if (!cancelled) {
           setBattleState({ run: stored.run });
           setLoading(false);
         }
         return;
+      }
+      if (runId) {
+        const cachedRun = loadStoredRunById(runId);
+        if (cachedRun) {
+          if (!cancelled) {
+            setBattleState({ run: cachedRun });
+            setLoading(false);
+          }
+          return;
+        }
       }
       if (!runId) {
         if (!cancelled) {
@@ -65,7 +76,7 @@ export function ModelBattleResults() {
     return () => {
       cancelled = true;
     };
-  }, [searchParams]);
+  }, [params?.runId, searchParams]);
 
   const run = battleState?.run ?? null;
   const outputs = useMemo(() => (run ? run.outputs.slice(0, 4) : []), [run]);
@@ -81,68 +92,42 @@ export function ModelBattleResults() {
     { label: "Agreement %", value: `${agreementScore}%`, tone: "accent" },
     { label: "Disagreement %", value: `${disagreementScore}%`, tone: "warn" },
     { label: "Overall confidence", value: `${Math.round(overallConfidence)}%` },
-    { label: "Hallucination risk", value: `${Math.round(hallucinationRisk)}%`, tone: "warn" }
+    { label: "Hallucination risk", value: hallucinationLabel(hallucinationRisk), tone: "warn" }
   ];
 
   const verdict = useMemo(() => buildVerdictSummary(run, bestOutput), [bestOutput, run]);
   const track = run?.track;
 
   return (
-    <OrbitBackdrop contentClassName="px-4 py-6 md:px-6 lg:px-8">
-      <main className="mx-auto flex min-h-dvh max-w-7xl flex-col gap-6">
-        <nav className="flex flex-wrap items-center justify-between gap-4 rounded-full border border-white/10 bg-black/25 px-4 py-3 text-sm backdrop-blur">
-          <Link href="/" className="inline-flex items-center gap-3 font-semibold tracking-[0.28em] text-emerald-100">
-            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-emerald-300/30 bg-emerald-300/10">
-              ◉
-            </span>
-            AI MUSIC X-RAY
-          </Link>
-          <div className="hidden items-center gap-2 text-xs uppercase tracking-[0.2em] text-slate-400 md:flex">
-            <Link href="/model-battle" className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-slate-300 hover:bg-white/10">
-              Model Battle
-            </Link>
-            <Link href="/results" className="rounded-full border border-emerald-300/30 bg-emerald-300/10 px-4 py-2 text-emerald-100">
-              Results
-            </Link>
-            <Link href="/model-battle/history" className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-slate-300 hover:bg-white/10">
-              History
-            </Link>
-            <Link href="/settings" className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-slate-300 hover:bg-white/10">
-              Settings
-            </Link>
-          </div>
-          <div className="flex items-center gap-2">
-            <Link href="/model-battle/history" className="inline-flex h-10 items-center justify-center rounded-full border border-white/10 bg-white/5 px-4 text-slate-200 hover:bg-white/10">
-              View History
-            </Link>
-            <div className="h-10 w-10 rounded-full border border-white/10 bg-[radial-gradient(circle_at_30%_30%,rgba(134,239,172,.6),rgba(4,17,10,.85))]" aria-hidden="true" />
-          </div>
-        </nav>
-
-        <header className="flex flex-col gap-4 rounded-[2rem] border border-white/10 bg-[linear-gradient(180deg,rgba(5,17,11,.96),rgba(5,17,11,.72))] p-5 shadow-2xl shadow-emerald-950/20 md:p-6 xl:flex-row xl:items-end xl:justify-between">
-          <div className="max-w-3xl space-y-3">
-            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-300/10 px-3 py-1 text-xs uppercase tracking-[0.24em] text-emerald-100">
-              <Radar size={14} />
-              Results
+    <OrbitBackdrop contentClassName="pb-10">
+      <BattleShell
+        currentRoute="results"
+        routeLabel="3. Results"
+        routePath={run ? `/model-battle/results/${run.id}` : typeof params?.runId === "string" ? `/model-battle/results/${params.runId}` : "/results"}
+        action={<BattleActionLink href="/model-battle/history">View history</BattleActionLink>}
+      >
+        <BattlePanel className="p-5 md:p-6">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+            <BattleSectionLabel
+              label="AI Verdict Summary"
+              title={run ? "Comparison complete." : "Results"}
+              description={run ? `Comparison completed across ${run.providerCount} AI models.` : "No completed battle is stored yet."}
+            />
+            <div className="flex flex-wrap gap-2">
+              <Button type="button" className="h-11" onClick={() => router.push("/model-battle")}>
+                Compare New Music
+                <ArrowRight size={16} />
+              </Button>
+              <Button type="button" variant="ghost" className="h-11" onClick={() => router.push("/model-battle?reuse=1")}>
+                Run same track again
+              </Button>
             </div>
-            <h1 className="text-4xl font-semibold tracking-tight md:text-6xl">Results</h1>
-            <p className="text-base leading-7 text-slate-300 md:text-lg">
-              {run ? `Comparison completed across ${run.providerCount} AI models.` : "No completed battle is stored yet."}
-            </p>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Button type="button" className="h-11" onClick={() => router.push("/model-battle")}>
-              Compare New Music
-              <ArrowRight size={16} />
-            </Button>
-            <Button type="button" variant="ghost" className="h-11" onClick={() => router.push("/model-battle/history")}>
-              View History
-            </Button>
-          </div>
-        </header>
+          {run ? <ResultHero run={run} /> : null}
+        </BattlePanel>
 
         {loading ? (
-          <section className="grid gap-4 rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
+          <BattlePanel className="grid gap-4 p-6">
             <div className="h-8 w-40 animate-pulse rounded-full bg-white/10" />
             <div className="grid gap-4 xl:grid-cols-[1.4fr_.6fr]">
               <div className="space-y-4 rounded-[2rem] border border-white/10 bg-white/[0.03] p-4 md:p-6">
@@ -159,29 +144,20 @@ export function ModelBattleResults() {
                 <div className="h-56 animate-pulse rounded-[2rem] border border-white/10 bg-white/[0.03]" />
               </div>
             </div>
-          </section>
+          </BattlePanel>
         ) : run ? (
           <>
-            <section className="grid gap-4 xl:grid-cols-[1.4fr_.6fr]">
-              <div className="space-y-4 rounded-[2rem] border border-white/10 bg-white/[0.04] p-4 md:p-6">
+            <section className="grid gap-4">
+              <BattlePanel className="flex flex-col gap-4 p-4 md:p-6">
                 <div className="flex flex-wrap items-end justify-between gap-3">
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Disagreement orbit</p>
-                    <h2 className="mt-1 text-2xl font-semibold">Agreement, clustering, and winner visibility</h2>
-                  </div>
+                  <BattleSectionLabel label="Disagreement Orbit" title="Agreement, clustering, and winner visibility" />
                   <Legend />
                 </div>
-                <ModelBattleOrbit outputs={outputs} summary={run.summary} className="h-[520px]" />
-                <div className="grid gap-3 md:grid-cols-4">
-                  <WinnerBadge label="Most grounded" value={run.summary.mostGroundedModel} />
-                  <WinnerBadge label="Best overall" value={run.summary.bestOverallAnswer} />
-                  <WinnerBadge label="Most creative" value={run.summary.mostCreativeModel} />
-                  <WinnerBadge label="Most cautious" value={run.summary.mostCautiousModel} />
-                </div>
-              </div>
+                <ModelBattleOrbit outputs={outputs} summary={run.summary} className="min-h-[34rem] md:min-h-[40rem]" />
+              </BattlePanel>
 
-              <aside className="space-y-4">
-                <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
+              <section className="grid gap-4 lg:grid-cols-2">
+                <BattlePanel className="p-5">
                   <p className="text-xs uppercase tracking-[0.22em] text-slate-400">AI verdict</p>
                   <h2 className="mt-2 text-2xl font-semibold">Synthesized summary</h2>
                   <p className="mt-4 text-sm leading-7 text-slate-300">{verdict}</p>
@@ -190,29 +166,34 @@ export function ModelBattleResults() {
                       <MetricPill key={metric.label} {...metric} />
                     ))}
                   </div>
-                </div>
+                </BattlePanel>
 
-                <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
-                  <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Track snapshot</p>
-                  <h2 className="mt-2 text-2xl font-semibold">Comparison context</h2>
-                  {track ? (
+                {track ? (
+                  <BattlePanel className="p-5">
+                    <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Track snapshot</p>
+                    <h2 className="mt-2 text-2xl font-semibold">Comparison context</h2>
                     <div className="mt-4 grid gap-4">
-                      <TrackSnapshotCard run={run} />
+                      <TrackSnapshotCard run={run} compact />
                     </div>
-                  ) : null}
-                </div>
-              </aside>
+                  </BattlePanel>
+                ) : null}
+              </section>
             </section>
 
-            <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-4 md:p-6">
+            <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+              <WinnerBadge label="Most grounded" value={run.summary.mostGroundedModel} description="Best supported by musical context" />
+              <WinnerBadge label="Best overall" value={run.summary.bestOverallAnswer} description="Most balanced across all criteria" />
+              <WinnerBadge label="Most creative" value={run.summary.mostCreativeModel} description="Most unique angles and interpretations" />
+              <WinnerBadge label="Most cautious" value={run.summary.mostCautiousModel} description="Lowest hallucination risk and careful reasoning" />
+            </section>
+
+            <BattlePanel className="p-4 md:p-6">
               <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Model comparison</p>
-                  <h2 className="mt-1 text-2xl font-semibold">Comparison columns</h2>
-                  <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-300">
-                    Provider cards stay visible while you scroll, and the table keeps the first metric column anchored for fast scanning.
-                  </p>
-                </div>
+                <BattleSectionLabel
+                  label="Model Comparison"
+                  title="Comparison columns"
+                  description="Provider cards stay visible while you scroll, and the table keeps the first metric column anchored for fast scanning."
+                />
                 <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-slate-400">
                   <Sparkles size={14} />
                   {outputs.length} / 4 models shown
@@ -251,14 +232,11 @@ export function ModelBattleResults() {
                   </table>
                 </div>
               </div>
-            </section>
+            </BattlePanel>
 
-            <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-4 md:p-6">
+            <BattlePanel className="p-4 md:p-6">
               <div className="flex items-end justify-between gap-3">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Raw responses</p>
-                  <h2 className="mt-1 text-2xl font-semibold">Expandable model outputs</h2>
-                </div>
+                <BattleSectionLabel label="Raw Responses" title="Expandable model outputs" />
                 <div className="text-xs uppercase tracking-[0.2em] text-slate-500">Collapsed by default</div>
               </div>
 
@@ -280,9 +258,9 @@ export function ModelBattleResults() {
                   </details>
                 ))}
               </div>
-            </section>
+            </BattlePanel>
 
-            <section className="grid gap-3 rounded-[2rem] border border-white/10 bg-white/[0.04] p-4 md:grid-cols-3 md:p-6">
+            <BattlePanel className="grid gap-3 p-4 md:grid-cols-3 md:p-6">
               <Button type="button" className="h-12" onClick={() => router.push("/model-battle")}>
                 Compare New Music
                 <ArrowRight size={16} />
@@ -298,10 +276,10 @@ export function ModelBattleResults() {
               <Button type="button" variant="ghost" className="h-12" onClick={() => router.push("/model-battle/history")}>
                 View History
               </Button>
-            </section>
+            </BattlePanel>
           </>
         ) : (
-          <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
+          <BattlePanel className="p-6">
             <div className="max-w-2xl space-y-4">
               <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs uppercase tracking-[0.22em] text-slate-400">
                 <Music2 size={14} />
@@ -321,9 +299,9 @@ export function ModelBattleResults() {
                 </Button>
               </div>
             </div>
-          </section>
+          </BattlePanel>
         )}
-      </main>
+      </BattleShell>
     </OrbitBackdrop>
   );
 }
@@ -364,20 +342,11 @@ function MetricPill({ label, value, tone = "default" }: MetricCard) {
   );
 }
 
-function WinnerBadge({ label, value }: { label: string; value: string }) {
+function ResultHero({ run }: { run: ModelAnalysisRun }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-[#07140d] px-4 py-4">
-      <div className="text-[11px] uppercase tracking-[0.18em] text-slate-400">{label}</div>
-      <div className="mt-2 text-sm font-medium text-white">{value}</div>
-    </div>
-  );
-}
-
-function TrackSnapshotCard({ run }: { run: ModelAnalysisRun }) {
-  return (
-    <div className="overflow-hidden rounded-[1.5rem] border border-white/10 bg-[#07140d]">
-      <div className="grid gap-4 p-4 md:grid-cols-[140px_1fr]">
-        <div className="overflow-hidden rounded-2xl border border-white/10 bg-black/20">
+    <div className="mt-5 overflow-hidden rounded-[1.7rem] border border-white/10 bg-[#07140d]">
+      <div className="grid gap-4 p-4 md:grid-cols-[120px_1fr_auto_auto_auto] md:items-center md:p-5">
+        <div className="overflow-hidden rounded-[1.1rem] border border-white/10 bg-black/20">
           {run.track.albumArt ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={run.track.albumArt} alt={`${run.track.name} album art`} className="aspect-square h-full w-full object-cover" />
@@ -387,6 +356,53 @@ function TrackSnapshotCard({ run }: { run: ModelAnalysisRun }) {
             </div>
           )}
         </div>
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="truncate text-2xl font-semibold text-white">{run.track.name}</h2>
+            <span className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-[10px] uppercase tracking-[0.2em] text-slate-300">
+              {run.track.explicit ? "Explicit" : "Track"}
+            </span>
+          </div>
+          <p className="mt-1 truncate text-sm text-slate-300">
+            {run.track.artistName} {run.track.albumName ? `· ${run.track.albumName}` : ""}
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <HeaderTag>{friendlyMode(run.mode)}</HeaderTag>
+            <HeaderTag>{run.question}</HeaderTag>
+          </div>
+        </div>
+        <RunMeta label="Run ID" value={run.id.slice(0, 8)} />
+        <RunMeta label="Created" value={new Date(run.createdAt).toLocaleString()} />
+        <RunMeta label="Models" value={String(run.providerCount)} />
+      </div>
+    </div>
+  );
+}
+
+function WinnerBadge({ label, value, description }: { label: string; value: string; description: string }) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-[#07140d] px-4 py-4">
+      <div className="text-[11px] uppercase tracking-[0.18em] text-slate-400">{label}</div>
+      <div className="mt-2 text-lg font-semibold text-white">{value}</div>
+      <div className="mt-2 text-sm leading-6 text-slate-400">{description}</div>
+    </div>
+  );
+}
+
+function TrackSnapshotCard({ run, compact = false }: { run: ModelAnalysisRun; compact?: boolean }) {
+  return (
+    <div className="overflow-hidden rounded-[1.5rem] border border-white/10 bg-[#07140d]">
+      <div className={`grid gap-4 p-4 ${compact ? "md:grid-cols-1" : "md:grid-cols-[140px_1fr]"}`}>
+        {!compact ? <div className="overflow-hidden rounded-2xl border border-white/10 bg-black/20">
+          {run.track.albumArt ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={run.track.albumArt} alt={`${run.track.name} album art`} className="aspect-square h-full w-full object-cover" />
+          ) : (
+            <div className="flex aspect-square items-center justify-center bg-gradient-to-br from-emerald-300/25 to-slate-900 text-emerald-100">
+              <Music2 size={28} />
+            </div>
+          )}
+        </div> : null}
         <div className="space-y-4">
           <div>
             <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Track</p>
@@ -425,6 +441,19 @@ function TrackSnapshotCard({ run }: { run: ModelAnalysisRun }) {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function HeaderTag({ children }: { children: ReactNode }) {
+  return <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-slate-200">{children}</span>;
+}
+
+function RunMeta({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-[1.1rem] border border-white/10 bg-white/[0.03] px-4 py-3">
+      <div className="text-[10px] uppercase tracking-[0.2em] text-slate-500">{label}</div>
+      <div className="mt-2 text-sm font-medium text-white">{value}</div>
     </div>
   );
 }
@@ -531,4 +560,17 @@ function calcAgreementScore(matrix: ModelAnalysisRun["summary"]["similarityMatri
 function averageOf(values: number[]) {
   if (!values.length) return 0;
   return values.reduce((sum, value) => sum + value, 0) / values.length;
+}
+
+function hallucinationLabel(value: number) {
+  if (value >= 60) return "High";
+  if (value >= 35) return "Medium";
+  return "Low";
+}
+
+function friendlyMode(mode: ModelAnalysisRun["mode"]) {
+  return mode
+    .split("-")
+    .map((chunk) => chunk.charAt(0).toUpperCase() + chunk.slice(1))
+    .join(" ");
 }
