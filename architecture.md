@@ -6,7 +6,7 @@ AI Music X-Ray is a Next.js App Router application with three main concerns:
 
 1. presentation and interaction in the browser
 2. Spotify-backed playback and auth on the server
-3. music analysis and history/analytics processing
+3. model comparison, music analysis, and history/analytics processing
 
 ## Layers
 
@@ -35,6 +35,8 @@ AI Music X-Ray is a Next.js App Router application with three main concerns:
 
 - generated beat and stem data for demo mode
 - optional model-ready external analysis hooks
+- AI model battle workflow with normalized input and Zod-validated output
+- deterministic evaluation and comparison summaries
 - future worker/service integration for heavier processing
 
 ## Key Boundaries
@@ -54,4 +56,4 @@ The visual system should be centralized through shared theme tokens and reusable
 - improve the shared design tokens and surface styling
 - expand analytics ingestion when real historical data is available
 - move expensive analysis into an external worker/service only when needed
-
+- keep provider adapters environment-gated and server-side only

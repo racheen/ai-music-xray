@@ -2,6 +2,8 @@
 
 The production Vercel app does not run GPU or long CPU inference inside serverless functions. Use this folder for adapters that call an external analysis service.
 
+The main app now also includes a provider abstraction for model-comparison runs. Keep heavy or experimental providers out of the client bundle and wire them through server-side adapters.
+
 Suggested model/service options:
 
 - Demucs for stem separation.

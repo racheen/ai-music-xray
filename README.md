@@ -1,160 +1,154 @@
 # AI Music X-Ray
 
-A full-stack Next.js App Router music visualizer for Vercel. Users can connect Spotify, play a track through the Spotify Web Playback SDK, and see real-time Three.js visuals driven by beat data, progress, tempo, sections, and simulated stems.
+AI Music X-Ray is a portfolio-grade Next.js music intelligence platform that compares multiple model opinions on the same Spotify track, scores their grounding, and visualizes the disagreement.
 
-The app runs end-to-end immediately in demo mode. Spotify analysis endpoints are attempted when available, then the app gracefully falls back to generated beat and stem data.
-When `AUDIO_ANALYSIS_API_URL` is configured, the Next.js server route `/api/analyze-track` forwards requests to a separate Python FastAPI service and still falls back to simulated analysis if that service is unavailable.
+It still preserves the original demo-friendly visualizer flow, but now adds:
+
+- a multi-provider AI abstraction layer
+- normalized track analysis input shared across all models
+- structured JSON model output with Zod validation
+- deterministic evaluation scores and comparison summaries
+- a saved analysis history backed by PostgreSQL tables
+- a new AI Model Comparison page for side-by-side review
 
 ## Tech stack
 
 - Next.js App Router and TypeScript
 - Tailwind CSS
-- React Three Fiber, Three.js, and drei postprocessing
+- React Three Fiber and Three.js
 - Spotify Web API and Spotify Web Playback SDK
-- Secure server-side Spotify OAuth routes
-- Optional external AI analysis interface for open-source models
-- Separate containerized Python FastAPI service for production-style audio analysis
+- PostgreSQL persistence
+- Provider adapters for OpenAI, Anthropic, Gemini, Mistral, and Ollama
+- Server-side Zod validation and deterministic evaluation
+
+## Architecture
+
+```mermaid
+flowchart LR
+  U[User] --> H[Home / Landing]
+  H --> M[Model Battle Page]
+  M --> A[API /api/model-battle]
+  A --> P[Provider Adapters]
+  P --> OAI[OpenAI]
+  P --> ANT[Anthropic]
+  P --> GEM[Gemini]
+  P --> MIS[Mistral]
+  P --> LOC[Local / Ollama]
+  A --> E[Evaluation Engine]
+  A --> D[(PostgreSQL)]
+  M --> V[Three.js Orbit View]
+  M --> R[Saved History]
+```
 
 ## Local setup
 
 ```bash
 npm install
 cp .env.example .env.local
+npm run db:apply
 npm run dev
 ```
 
 Open `http://localhost:3000`.
 
-## Spotify Developer app setup
+If your local Postgres container is not already running, start it first with:
 
-1. Go to the Spotify Developer Dashboard and create an app.
-2. Add this redirect URI for local development:
-
-```text
-http://localhost:3000/api/spotify/callback
+```bash
+docker compose up -d postgres
 ```
 
-3. Copy the app client ID and client secret into `.env.local`.
-4. Use these variables:
+## Environment variables
+
+Required for Spotify auth and database persistence:
 
 ```bash
 SPOTIFY_CLIENT_ID="..."
 SPOTIFY_CLIENT_SECRET="..."
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
 SPOTIFY_REDIRECT_URI="http://localhost:3000/api/spotify/callback"
-AUDIO_ANALYSIS_API_URL="http://localhost:8000"
+DATABASE_URL="postgres://..."
 ```
 
-The Spotify client secret is only read inside server route handlers. It is never exposed to client components.
-
-## Vercel deployment
-
-1. Create a Vercel project from this repository.
-2. Add the production URL to Spotify as a redirect URI:
-
-```text
-https://your-project.vercel.app/api/spotify/callback
-```
-
-3. Add the same environment variables in Vercel, with production URLs:
+Optional model provider flags:
 
 ```bash
-NEXT_PUBLIC_APP_URL="https://your-project.vercel.app"
-SPOTIFY_REDIRECT_URI="https://your-project.vercel.app/api/spotify/callback"
+OPENAI_API_KEY=""
+ANTHROPIC_API_KEY=""
+GEMINI_API_KEY=""
+MISTRAL_API_KEY=""
+OLLAMA_BASE_URL="http://localhost:11434"
+OLLAMA_MODEL="llama3.1"
+AI_PROVIDER_OPENAI="false"
+AI_PROVIDER_ANTHROPIC="false"
+AI_PROVIDER_GEMINI="false"
+AI_PROVIDER_MISTRAL="false"
+AI_PROVIDER_OLLAMA="false"
 ```
 
-No GPU inference or long-running analysis is required in Vercel functions.
+The provider flags allow you to enable or disable adapters without exposing secrets to the client.
 
-## Playback limitations
+## Local Llama
 
-- Spotify Web Playback SDK browser playback requires Spotify Premium.
-- Users may need to select `AI Music X-Ray` from Spotify's device picker.
-- Some Spotify audio analysis or audio feature endpoints may be unavailable for newer developer accounts. The app detects that and uses generated analysis instead.
+To use Ollama as the local Llama fallback:
 
-## Demo mode
-
-`/app` opens in demo mode by default, so the visualizer works without Spotify credentials. Demo mode drives the same visual engine with generated tempo, beats, sections, and simulated stems.
-
-Keyboard shortcuts:
-
-- `Space`: play or pause
-- `m`: cycle mood
-- `l`: toggle layer preset
-
-## Optional open-source AI roadmap
-
-The app includes a model-ready interface in `src/lib/ai/external-analysis.ts` and documentation in `ai/README.md`.
-
-Suggested integrations:
-
-- Demucs for stem separation
-- Open-Unmix for source separation
-- Essentia or librosa for audio features
-- MusicNN or OpenL3 for embeddings and higher-level music understanding
-
-Heavy analysis should run outside Vercel on Modal, Replicate, Hugging Face Spaces, RunPod, or a local Python service.
-
-## Sprint 1: Music Revival Index
-
-The first analytics sprint adds a revival scoring module and API endpoint:
-
-```http
-POST /api/analytics/revival
+```bash
+ollama pull llama3.1
+ollama serve
 ```
 
-Use this endpoint with imported listening history to detect tracks or artists that disappeared from rotation and later returned. The current `GET /api/analytics/revival` route can read Spotify recently played data for wiring checks, but real multi-year revival analysis needs stored history from Spotify Extended Streaming History or a future ingestion worker.
+Then set:
 
-You can also export the authenticated user's recent-play API window as normalized JSON:
-
-```http
-GET /api/analytics/spotify-history
+```bash
+OLLAMA_BASE_URL="http://localhost:11434"
+OLLAMA_MODEL="llama3.1"
+AI_PROVIDER_OLLAMA="true"
 ```
 
-Database starter files:
+Leave the cloud provider flags off if you want to compare against local Llama only.
 
-- `db/001_music_revival.sql`: Postgres tables and Power BI-ready materialized views.
-- `docs/sprint-1-music-revival.md`: scoring notes, endpoint contract, and next backend step.
+## Key routes
 
-Example contract:
+- `/` landing page
+- `/app` real-time visualizer
+- `/model-battle` AI model comparison dashboard
+- `/history` saved analysis history section inside the comparison experience
+- `/spotify-history` Spotify recent-play JSON viewer
 
-```http
-POST /api/analyze-track
-Content-Type: application/json
+## Database schema
 
-{
-  "trackId": "spotify-track-id",
-  "previewUrl": "https://..."
-}
-```
+See `db/002_ai_music_intelligence_platform.sql` for the required tables:
 
-Returns:
+- `analysis_runs`
+- `model_outputs`
+- `evaluation_scores`
+- `track_snapshots`
+- `provider_logs`
 
-```json
-{
-  "trackId": "spotify-track-id",
-  "tempo": 122,
-  "stems": {
-    "vocals": 0.1,
-    "drums": 0.8,
-    "bass": 0.6,
-    "other": 0.3
-  },
-  "beats": [{ "start": 0, "duration": 0.5, "confidence": 0.9 }],
-  "mood": "hype",
-  "sections": []
-}
-```
+## Screenshots
 
-## Production notes
+Add portfolio screenshots here once you capture them:
 
-- Access and refresh tokens are stored in HTTP-only cookies.
-- Access tokens are returned to the client only for Spotify's Web Playback SDK.
-- Refresh logic lives in server routes.
-- `.env.example` documents all required configuration.
+- `docs/screenshots/home.png`
+- `docs/screenshots/model-battle.png`
+- `docs/screenshots/history.png`
 
-## Checks
+## Notes
+
+- Demo mode still works when Spotify or provider keys are missing.
+- The server keeps secrets out of the client bundle.
+- The model comparison workflow uses the same structured input for every provider.
+- If Postgres is not configured, the history API falls back to an empty result set.
+
+## Verification
 
 ```bash
 npm run lint
 npm run build
 ```
+
+## Roadmap
+
+- wire a real lyrics provider adapter
+- add more judge-model scoring options
+- persist richer run metadata and prompt versions
+- add authenticated user-specific comparison history

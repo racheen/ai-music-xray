@@ -1,10 +1,11 @@
 import type { Metadata, Viewport } from "next";
+import { PlaybackProvider } from "@/components/playback/PlaybackProvider";
 import { ServiceWorkerRegistration } from "@/components/pwa/ServiceWorkerRegistration";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: "AI Music X-Ray",
-  description: "A Spotify-powered real-time AI music visualizer with optional open-source model hooks.",
+  description: "A Spotify-powered AI music intelligence platform with multi-model comparison, visual analytics, and history.",
   applicationName: "AI Music X-Ray",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
@@ -35,7 +36,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="en">
       <body>
-        {children}
+        <PlaybackProvider>{children}</PlaybackProvider>
         <ServiceWorkerRegistration />
       </body>
     </html>

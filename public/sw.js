@@ -1,5 +1,5 @@
 const CACHE_NAME = "ai-music-xray-v1";
-const APP_SHELL = ["/", "/app", "/login", "/spotify-history", "/manifest.webmanifest"];
+const APP_SHELL = ["/", "/visualizer", "/login", "/spotify-history", "/manifest.webmanifest"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)));
@@ -30,6 +30,6 @@ self.addEventListener("fetch", (event) => {
         caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
         return response;
       })
-      .catch(() => caches.match(request).then((cached) => cached || caches.match("/app")))
+      .catch(() => caches.match(request).then((cached) => cached || caches.match("/visualizer")))
   );
 });

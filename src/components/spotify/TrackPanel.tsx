@@ -68,13 +68,13 @@ export function TrackPanel({
   const feedback = playerError ?? playerMessage;
 
   return (
-    <aside className="z-10 flex w-full max-w-xl flex-col gap-4 rounded-lg border border-white/10 bg-[#07140d]/72 p-4 shadow-2xl shadow-emerald-950/40 backdrop-blur md:w-[390px]">
+    <aside className="z-10 flex w-full max-w-xl flex-col gap-4 rounded-[1.8rem] border border-white/10 bg-[#07140d]/82 p-4 shadow-2xl shadow-emerald-950/40 backdrop-blur md:w-[390px]">
       <div className="flex items-center justify-between gap-3">
-        <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Controls</p>
+        <p className="text-xs uppercase tracking-[0.18em] text-slate-400">{isDemo ? "Demo mode" : "Now playing | Spotify"}</p>
         <button
           type="button"
           onClick={onHideControls}
-          className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-white/10 bg-white/6 text-slate-300 transition hover:bg-white/10 hover:text-white"
+          className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-white/6 text-slate-300 transition hover:bg-white/10 hover:text-white"
           aria-label="Hide controls"
           title="Hide controls"
         >
@@ -82,8 +82,9 @@ export function TrackPanel({
         </button>
       </div>
 
-      <div className="flex gap-4">
-        <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-md bg-white/10">
+      <div className="rounded-[1.6rem] border border-white/10 bg-white/[0.03] p-4">
+        <div className="flex gap-4">
+        <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-[1rem] bg-white/10">
           {track?.albumArt ? (
             <Image src={track.albumArt} alt="" fill sizes="80px" className="object-cover" unoptimized={track.albumArt.startsWith("data:")} />
           ) : (
@@ -97,6 +98,11 @@ export function TrackPanel({
           <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10">
             <div className="h-full rounded-full bg-emerald-300" style={{ width: `${progressPct}%` }} />
           </div>
+        </div>
+      </div>
+        <div className="mt-4 grid gap-2 text-sm">
+          <MetaPill label="Mode" value={isDemo ? "Demo" : "Spotify"} />
+          <MetaPill label="Tempo" value={track?.tempo ? `${Math.round(track.tempo)} BPM` : "Generated"} />
         </div>
       </div>
 
@@ -185,7 +191,7 @@ export function TrackPanel({
             <button
               key={item}
               onClick={() => onMood(item)}
-              className={`h-9 rounded-md border text-sm capitalize transition ${
+              className={`h-9 rounded-full border text-sm capitalize transition ${
                 mood === item ? "border-emerald-200 bg-emerald-300 text-slate-950" : "border-white/10 bg-white/6 text-slate-200 hover:bg-white/10"
               }`}
             >
@@ -204,8 +210,8 @@ export function TrackPanel({
             <button
               key={id}
               onClick={() => onLayer(id)}
-              className={`h-9 rounded-md border text-sm transition ${
-                layers[id] ? "border-fuchsia-300/70 bg-fuchsia-300/20 text-white" : "border-white/10 bg-transparent text-slate-400"
+              className={`h-9 rounded-full border text-sm transition ${
+                layers[id] ? "border-emerald-300/70 bg-emerald-300/15 text-white" : "border-white/10 bg-transparent text-slate-400"
               }`}
             >
               {label}
@@ -221,6 +227,15 @@ export function TrackPanel({
         </a>
       ) : null}
     </aside>
+  );
+}
+
+function MetaPill({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-[1rem] border border-white/10 bg-[#07140d] px-3 py-2">
+      <span className="text-xs uppercase tracking-[0.16em] text-slate-500">{label}</span>
+      <span className="text-sm text-white">{value}</span>
+    </div>
   );
 }
 
